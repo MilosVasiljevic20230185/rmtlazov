@@ -37,3 +37,6 @@ desktop.ini
 
 # Logovi
 *.log
+
+# Claude Code lokalna podesavanja
+.claude/settings.local.json
