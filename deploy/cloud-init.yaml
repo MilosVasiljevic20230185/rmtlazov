@@ -1,0 +1,38 @@
+#cloud-config
+#
+# Automatsko podizanje Lazes servera pri prvom pokretanju virtuelne masine.
+#
+# Skripta sama preuzima projekat sa GitHub-a, kompajlira ga i pokrece kao
+# systemd servis - nista se ne prenosi sa lokalnog racunara.
+#
+# Upotreba na Azure-u: sadrzaj ovog fajla nalepiti u polje
+# "Custom data" (kartica Advanced) prilikom kreiranja virtuelne masine.
+#
+# Testirano na Ubuntu Server 24.04 LTS.
+
+package_update: true
+
+packages:
+  - openjdk-21-jdk
+  - maven
+  - git
+
+runcmd:
+  # Namenski korisnik pod kojim ce server raditi
+  - useradd -r -s /usr/sbin/nologin lazes || true
+
+  # Preuzimanje i kompajliranje projekta (traje nekoliko minuta)
+  - git clone https://github.com/MilosVasiljevic20230185/rmtlazov.git /opt/lazes-src
+  - cd /opt/lazes-src && mvn -B clean install -DskipTests
+
+  # Instalacija servera
+  - mkdir -p /opt/lazes
+  - cp /opt/lazes-src/server/target/lazes-server.jar /opt/lazes/
+  - chown -R lazes:lazes /opt/lazes
+  - cp /opt/lazes-src/deploy/lazes-server.service /etc/systemd/system/
+
+  # Pokretanje servisa
+  - systemctl daemon-reload
+  - systemctl enable --now lazes-server
+
+final_message: "Lazes server je instaliran i pokrenut na portu 5555."
