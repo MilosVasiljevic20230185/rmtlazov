@@ -101,6 +101,38 @@ rmtlazov/
 
 ---
 
+## Odluke donete tokom implementacije
+
+Nekoliko stvari dokumentacija nije precizirala ili je bila protivrečna, pa su razrešene ovako:
+
+| Pitanje | Odluka |
+|---|---|
+| Vrednosti karata | **1–13** (As=1 … Kralj=13), ukupno **104 karte**, bez džokera. Dokumentacija na dva mesta pominje opseg 1–14, što ne odgovara standardnom špilu od 13 rangova. |
+| Identifikator karte | Pošto se igra sa dva špila, ista karta postoji dva puta, pa identifikator nosi i redni broj špila: `7H1`, `10D2`, `AS1`. |
+| Vrednost runde | Postavlja je prvi potez runde; svi je moraju nastaviti. **Prozivanje zatvara rundu** i sledeći igrač bira novu vrednost. Vučenje karte je ne menja. |
+| Prozivanje | Nakon svakog poteza otvara se prozor od **5 sekundi**. Server prihvata **samo prvu** pristiglu prozivku i odbacuje ostale. |
+| Uslov pobede | Igrač koji odigra poslednje karte pobeđuje **tek kada istekne prozor za prozivanje**. Ako ga prozovu i lagao je, kupi ceo centar i nastavlja da igra. |
+| Istek poteza | Po isteku 30 sekundi server automatski vuče kartu umesto igrača; ako je špil prazan, baca prvu kartu iz njegove ruke. |
+| Grafika | Karte i sto se crtaju JavaFX oblicima i Unicode simbolima (♠♥♦♣), pa projekat ne zavisi ni od jednog slikovnog fajla. |
+
+Protokol iz Dokumenta 3 dopunjen je porukama `start_game`, `room_joined`, `set_avatar`, `leave_room`, `card_drawn` i `error`, koje su bile neophodne za lobby i prikaz grešaka.
+
+---
+
+## Testovi
+
+```bash
+mvn test
+```
+
+Pokriveno je **31 test**: model karata i protokol, sva pravila igre kroz sve faze partije, i **5 integracionih testova** koji igraju partiju kroz pravi TCP soket.
+
+---
+
 ## Dokumentacija
 
-Projektna dokumentacija (Koncept igre, Korisnički zahtevi, Tehnička specifikacija) nalazi se u folderu `docs/`.
+Projektna dokumentacija nalazi se u folderu `docs/`:
+
+- `01_koncept_igre.docx` — koncept, pravila i opseg projekta
+- `02_user_stories.docx` — korisnički zahtevi (MoSCoW)
+- `03_tehnicka_specifikacija.docx` — arhitektura, protokol i tehnološki stek
