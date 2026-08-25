@@ -1,0 +1,27 @@
+[Unit]
+Description=Lazes game server
+Documentation=https://github.com/MilosVasiljevic20230185/rmtlazov
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+# Namenski sistemski korisnik - server nema razloga da radi kao root.
+# Kreira se sa: sudo useradd -r -s /usr/sbin/nologin lazes
+User=lazes
+Group=lazes
+
+WorkingDirectory=/opt/lazes
+ExecStart=/usr/bin/java -jar /opt/lazes/lazes-server.jar 5555
+
+# Server se sam podize ako pukne ili ako se masina restartuje.
+Restart=always
+RestartSec=5
+
+# Logovi idu u journald: sudo journalctl -u lazes-server -f
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

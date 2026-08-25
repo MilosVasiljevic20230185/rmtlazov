@@ -42,14 +42,30 @@ public final class Main {
         running.await();
     }
 
+    /**
+     * Port se bira ovim redosledom: argument komandne linije, pa promenljiva
+     * okruzenja {@code PORT}, pa podrazumevani {@value GameRules#DEFAULT_PORT}.
+     * Promenljiva okruzenja je tu zbog hostovanja, gde port cesto zadaje platforma.
+     */
     private static int parsePort(String[] args) {
-        if (args.length == 0) {
-            return GameRules.DEFAULT_PORT;
+        if (args.length > 0) {
+            return parseOrDefault(args[0], "argument");
         }
+
+        String fromEnv = System.getenv("PORT");
+        if (fromEnv != null && !fromEnv.isBlank()) {
+            return parseOrDefault(fromEnv.trim(), "promenljiva okruzenja PORT");
+        }
+
+        return GameRules.DEFAULT_PORT;
+    }
+
+    private static int parseOrDefault(String value, String source) {
         try {
-            return Integer.parseInt(args[0]);
+            return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            Log.warn("Neispravan port '%s', koristi se podrazumevani %d", args[0], GameRules.DEFAULT_PORT);
+            Log.warn("Neispravan port '%s' (%s), koristi se podrazumevani %d",
+                    value, source, GameRules.DEFAULT_PORT);
             return GameRules.DEFAULT_PORT;
         }
     }
