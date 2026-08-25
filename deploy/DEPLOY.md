@@ -1,133 +1,147 @@
-# Hostovanje servera na Oracle Cloud (Always Free)
+# Igranje preko interneta
 
-Uputstvo za pokretanje **Lažeš** servera na besplatnoj virtuelnoj mašini, tako da članovi tima mogu da igraju partiju preko interneta.
+Klijent se uvek pokreće lokalno na svakom računaru — deli se **samo server**. Ovaj dokument opisuje nekoliko načina da server postane dostupan ostalim igračima.
 
-Klijent se i dalje pokreće lokalno na svakom računaru — hostuje se **samo server**.
+## Koju opciju izabrati
+
+| Opcija | Treba kartica | Ko šta instalira | Najbolje za |
+|---|---|---|---|
+| [Lokalna mreža](#a-lokalna-mreža-lan) | ne | ništa | **odbrana pred mentorom** |
+| [Tailscale](#b-tailscale) | **ne** | svi igrači | redovno testiranje u timu |
+| [playit.gg](#c-playitgg) | **ne** | samo host | pokazivanje nekome van tima |
+| [Oracle Cloud VM](#d-oracle-cloud-always-free) | da | ništa | server koji radi 24/7 |
+
+> **Zašto ne Koyeb, Render i slični:** igra koristi **sirovi TCP soket**, a ne HTTP. Te platforme javne servise rutiraju kroz HTTP proxy, pa raw TCP tamo radi samo uz posebnu plaćenu opciju. Isto važi i za ngrok — [njegovi TCP endpoint-i traže karticu](https://ngrok.com/blog/tcp-endpoints-require-verification) čak i na besplatnom planu.
 
 ---
 
-## Zašto virtuelna mašina, a ne Koyeb / Render
+## Windows Firewall — važi za sve opcije
 
-Igra koristi **sirovi TCP soket**, a ne HTTP. Platforme tipa Koyeb i Render javne servise rutiraju kroz HTTP proxy, pa raw TCP tamo radi samo uz posebnu (plaćenu) opciju. Obična virtuelna mašina daje javnu IP adresu sa punim TCP-om, bez ograničenja.
+Na računaru na kome se pokreće **server**, Windows Firewall podrazumevano blokira dolazne konekcije na port 5555. Otvori PowerShell **kao administrator**:
+
+```powershell
+netsh advfirewall firewall add rule name="Lazes server" dir=in action=allow protocol=TCP localport=5555
+```
+
+Ovo je najčešći uzrok situacije „server radi, ali se niko ne povezuje".
 
 ---
 
-## 1. Kreiranje instance
+## A. Lokalna mreža (LAN)
 
-1. Prijavi se na [cloud.oracle.com](https://cloud.oracle.com) → **Compute → Instances → Create instance**
+Najjednostavnije, i sasvim dovoljno za demonstraciju — svi računari na istoj WiFi mreži.
+
+Na računaru koji je server:
+
+```powershell
+ipconfig
+```
+
+Pročitaj `IPv4 Address` (npr. `192.168.0.14`) i pokreni server:
+
+```bash
+java -jar server/target/lazes-server.jar
+```
+
+Ostali igrači u glavnom meniju klijenta upisuju tu adresu kao **Server**, port ostaje **5555**.
+
+---
+
+## B. Tailscale
+
+Pravi privatnu mrežu između vaših računara — ponaša se kao da ste svi na istom LAN-u, bez obzira gde se nalazite. Besplatan **Personal** plan važi zauvek, obuhvata do 6 korisnika i neograničeno uređaja, a **registracija ide preko Google ili GitHub naloga — bez kartice**.
+
+1. Svi članovi tima odu na [tailscale.com](https://tailscale.com), prijave se istim nalogom tima i instaliraju klijent
+2. Na računaru koji je server:
+
+```bash
+tailscale ip -4
+```
+
+3. Dobiješ adresu oblika `100.x.y.z` — to je adresa koju ostali upisuju kao **Server**, port **5555**
+
+Radi i iza CGNAT-a i bez otvaranja ijednog porta na ruteru. Nema ograničenja saobraćaja ni trajanja sesije.
+
+---
+
+## C. playit.gg
+
+Tunel namenjen upravo game serverima. Besplatan, **bez kartice**, i — za razliku od Tailscale-a — **ostali igrači ne instaliraju ništa**, samo upišu adresu.
+
+1. Na računaru koji je server, preuzmi agenta sa [playit.gg](https://playit.gg) i pokreni ga
+2. Napravi tunel: tip **TCP**, lokalni port **5555**
+3. Dobijaš javnu adresu oblika `nesto.playit.gg` i **dodeljeni port** (najčešće nije 5555)
+4. Ostali u klijentu upisuju tu adresu kao **Server**, a dodeljeni broj kao **Port**
+
+Saobraćaj ide kroz njihove servere, što dodaje 10–50 ms — potpuno nebitno za igru na poteze.
+
+---
+
+## D. Oracle Cloud (Always Free)
+
+Prava virtuelna mašina sa javnom IP adresom i punim TCP-om, koja radi non-stop. Zahteva odobrenu karticu pri registraciji (ne naplaćuje se).
+
+### 1. Kreiranje instance
+
+1. [cloud.oracle.com](https://cloud.oracle.com) → **Compute → Instances → Create instance**
 2. **Image:** Canonical Ubuntu 22.04 ili 24.04
-3. **Shape:** bilo koji označen sa *Always Free-eligible*
-   - `VM.Standard.A1.Flex` (ARM) — 2 OCPU / 12 GB, ili
-   - `VM.Standard.E2.1.Micro` (AMD) — sasvim dovoljno za ovu igru
-4. U sekciji **Add SSH keys** sačuvaj privatni ključ (`.key` fajl) — bez njega nema pristupa mašini
-5. Zapamti **Public IP address** instance
+3. **Shape:** bilo koji označen sa *Always Free-eligible* (`VM.Standard.A1.Flex` ili `VM.Standard.E2.1.Micro`)
+4. Sačuvaj privatni SSH ključ i zapamti **Public IP address**
 
 > ARM ili AMD je svejedno — serverski modul je čist Java kod bez nativnih zavisnosti.
 
----
+### 2. Otvaranje porta — **dva nivoa zaštite**
 
-## 2. Otvaranje porta 5555 — **dva nivoa zaštite**
+Oracle ima dva odvojena firewall-a i moraju se otvoriti **oba**.
 
-Ovo je najčešći uzrok „server radi ali niko ne može da se poveže". Oracle ima **dva odvojena firewall-a** i moraju se otvoriti oba.
-
-### 2a. Oracle Security List (u konzoli)
-
-**Networking → Virtual Cloud Networks →** tvoj VCN **→ Security Lists →** Default Security List **→ Add Ingress Rules**
+**Security List** (u konzoli): **Networking → Virtual Cloud Networks →** tvoj VCN **→ Security Lists →** Default **→ Add Ingress Rules**
 
 | Polje | Vrednost |
 |---|---|
-| Source Type | CIDR |
 | Source CIDR | `0.0.0.0/0` |
 | IP Protocol | TCP |
 | Destination Port Range | `5555` |
 
-### 2b. iptables na samoj mašini (preko SSH)
-
-Oracle-ove Ubuntu slike dolaze sa iptables pravilima koja blokiraju sve osim SSH-a. Poveži se:
+**iptables** (preko SSH) — Oracle-ove Ubuntu slike blokiraju sve osim SSH-a:
 
 ```bash
 ssh -i putanja/do/kljuca.key ubuntu@JAVNA_IP_ADRESA
 ```
 
-pa otvori port i **trajno sačuvaj pravilo**:
-
 ```bash
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 5555 -j ACCEPT
-sudo netfilter-persistent save
+sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 5555 -j ACCEPT && sudo netfilter-persistent save
 ```
 
 > Bez `netfilter-persistent save` pravilo nestaje posle restarta mašine.
 
----
-
-## 3. Instalacija Jave i build projekta
+### 3. Java, build i servis
 
 ```bash
 sudo apt update && sudo apt install -y openjdk-21-jdk maven git
 ```
 
 ```bash
-git clone https://github.com/MilosVasiljevic20230185/rmtlazov.git
-cd rmtlazov && mvn clean install -DskipTests
+git clone https://github.com/MilosVasiljevic20230185/rmtlazov.git && cd rmtlazov && mvn clean install -DskipTests
 ```
 
----
-
-## 4. Server kao systemd servis
-
-Ovako server ostaje pokrenut i kada zatvoriš SSH sesiju, i sam se podiže posle restarta mašine.
-
 ```bash
-sudo mkdir -p /opt/lazes
-sudo cp ~/rmtlazov/server/target/lazes-server.jar /opt/lazes/
-sudo cp ~/rmtlazov/deploy/lazes-server.service /etc/systemd/system/
+sudo mkdir -p /opt/lazes && sudo cp server/target/lazes-server.jar /opt/lazes/ && sudo cp deploy/lazes-server.service /etc/systemd/system/
 ```
 
 ```bash
 sudo systemctl daemon-reload && sudo systemctl enable --now lazes-server
 ```
 
-Provera da radi:
-
-```bash
-sudo systemctl status lazes-server
-```
-
-Praćenje logova uživo (vidiš svako povezivanje, sobu i potez):
+Server sada preživljava zatvaranje SSH sesije i restart mašine. Logovi uživo:
 
 ```bash
 sudo journalctl -u lazes-server -f
 ```
 
----
-
-## 5. Povezivanje igrača
-
-Svaki igrač pokreće klijent kod sebe:
+### 4. Ažuriranje posle izmena u kodu
 
 ```bash
-java -jar client/target/lazes-client.jar
-```
-
-U glavnom meniju:
-
-| Polje | Vrednost |
-|---|---|
-| Server | javna IP adresa instance |
-| Port | `5555` |
-
-Jedan igrač pravi sobu i deli šestoznamenkasti kod, ostali se pridružuju tim kodom.
-
----
-
-## 6. Ažuriranje servera posle izmena u kodu
-
-```bash
-cd ~/rmtlazov && git pull && mvn clean install -DskipTests
-```
-
-```bash
-sudo cp server/target/lazes-server.jar /opt/lazes/ && sudo systemctl restart lazes-server
+cd ~/rmtlazov && git pull && mvn clean install -DskipTests && sudo cp server/target/lazes-server.jar /opt/lazes/ && sudo systemctl restart lazes-server
 ```
 
 ---
@@ -136,13 +150,13 @@ sudo cp server/target/lazes-server.jar /opt/lazes/ && sudo systemctl restart laz
 
 | Problem | Uzrok i rešenje |
 |---|---|
-| Klijent javlja „Nije moguće povezati se" | Skoro uvek firewall. Proveri **oba** koraka iz sekcije 2 — najčešće nedostaje iptables pravilo. |
-| Radilo pa prestalo posle restarta | Nije pokrenuto `netfilter-persistent save`. |
-| `systemctl status` pokazuje `failed` | Pogledaj `journalctl -u lazes-server -n 50`. Obično nedostaje jar na `/opt/lazes/` ili nije instalirana Java. |
-| Port 5555 zauzet | Promeni port u `.service` fajlu i u Security List pravilu, pa `sudo systemctl daemon-reload && sudo systemctl restart lazes-server`. |
+| „Nije moguće povezati se" | Skoro uvek firewall. Na Windows hostu pokreni `netsh` pravilo iznad; na Oracle VM-u proveri **oba** firewall-a. |
+| Radilo pa prestalo posle restarta VM-a | Nije pokrenuto `netfilter-persistent save`. |
+| `systemctl status` pokazuje `failed` | `journalctl -u lazes-server -n 50` — obično nedostaje jar u `/opt/lazes/` ili Java nije instalirana. |
+| Port 5555 zauzet | Pokreni server na drugom portu (`java -jar lazes-server.jar 5556`) i taj broj upiši u klijentu. |
 
-Brza provera da li je port otvoren spolja, sa svog računara:
+Provera da li je port dostupan spolja, sa drugog računara:
 
-```bash
-Test-NetConnection JAVNA_IP_ADRESA -Port 5555
+```powershell
+Test-NetConnection ADRESA_SERVERA -Port 5555
 ```

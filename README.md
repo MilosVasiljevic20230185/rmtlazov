@@ -92,9 +92,9 @@ Za partiju je potrebno pokrenuti najmanje **2 klijenta** (maksimalno 4). U glavn
 
 ## Igranje preko interneta
 
-Za partiju van lokalne mreže potrebno je hostovati **samo server** — klijent svako pokreće kod sebe. Uputstvo za besplatnu virtuelnu mašinu na Oracle Cloud-u: [deploy/DEPLOY.md](deploy/DEPLOY.md).
+Deli se **samo server** — klijent svako pokreće kod sebe. Uputstvo sa nekoliko opcija (lokalna mreža, Tailscale, playit.gg, Oracle Cloud) nalazi se u [deploy/DEPLOY.md](deploy/DEPLOY.md).
 
-> Igra koristi sirovi TCP soket, pa platforme koje javne servise rutiraju kroz HTTP proxy (Koyeb, Render) nisu pogodne bez posebne plaćene TCP opcije. Obična virtuelna mašina sa javnom IP adresom radi bez ograničenja.
+> Igra koristi sirovi TCP soket, pa platforme koje javne servise rutiraju kroz HTTP proxy (Koyeb, Render) nisu pogodne bez posebne plaćene TCP opcije. Tuneli namenjeni game serverima i obične virtuelne mašine rade bez ograničenja.
 
 ---
 
