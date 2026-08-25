@@ -4,10 +4,43 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class CardTest {
+
+    @Test
+    @DisplayName("BY_VALUE redja karte od najmanje do najvece vrednosti")
+    void sortsByValueAscending() {
+        List<Card> cards = new ArrayList<>(List.of(
+                new Card(Rank.KING, Suit.SPADES, 1),
+                new Card(Rank.ACE, Suit.HEARTS, 1),
+                new Card(Rank.TEN, Suit.CLUBS, 2),
+                new Card(Rank.TWO, Suit.DIAMONDS, 1)));
+
+        cards.sort(Card.BY_VALUE);
+
+        assertEquals(List.of(1, 2, 10, 13), cards.stream().map(Card::value).toList());
+    }
+
+    @Test
+    @DisplayName("BY_VALUE grupise karte iste vrednosti jednu uz drugu")
+    void groupsEqualValues() {
+        List<Card> cards = new ArrayList<>(List.of(
+                new Card(Rank.SEVEN, Suit.SPADES, 1),
+                new Card(Rank.THREE, Suit.HEARTS, 1),
+                new Card(Rank.SEVEN, Suit.HEARTS, 2),
+                new Card(Rank.THREE, Suit.CLUBS, 2),
+                new Card(Rank.SEVEN, Suit.DIAMONDS, 1)));
+
+        cards.sort(Card.BY_VALUE);
+
+        // Sve trojke pre svih sedmica, i nijedna vrednost nije prekinuta.
+        assertEquals(List.of(3, 3, 7, 7, 7), cards.stream().map(Card::value).toList());
+    }
 
     @Test
     @DisplayName("Identifikator karte spaja rang, boju i redni broj spila")

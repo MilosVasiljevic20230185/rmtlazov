@@ -208,8 +208,14 @@ public class TableController implements ScreenController {
         handCards.clear();
         handPane.getChildren().clear();
 
-        for (String cardId : message.getCards()) {
-            CardView view = new CardView(Card.fromId(cardId));
+        // Ruka se prikazuje sortirana, pa iste vrednosti stoje jedna uz drugu.
+        List<Card> cards = message.getCards().stream()
+                .map(Card::fromId)
+                .sorted(Card.BY_VALUE)
+                .toList();
+
+        for (Card card : cards) {
+            CardView view = new CardView(card);
             view.makeSelectable();
             view.setOnMouseClicked(event -> {
                 view.toggleSelected();
