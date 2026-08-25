@@ -52,16 +52,16 @@ Ostali igrači u glavnom meniju klijenta upisuju tu adresu kao **Server**, port 
 
 Pravi privatnu mrežu između vaših računara — ponaša se kao da ste svi na istom LAN-u, bez obzira gde se nalazite. Besplatan **Personal** plan važi zauvek, obuhvata do 6 korisnika i neograničeno uređaja, a **registracija ide preko Google ili GitHub naloga — bez kartice**.
 
-1. Svi članovi tima odu na [tailscale.com](https://tailscale.com), prijave se istim nalogom tima i instaliraju klijent
-2. Na računaru koji je server:
-
-```bash
-tailscale ip -4
-```
-
-3. Dobiješ adresu oblika `100.x.y.z` — to je adresa koju ostali upisuju kao **Server**, port **5555**
-
 Radi i iza CGNAT-a i bez otvaranja ijednog porta na ruteru. Nema ograničenja saobraćaja ni trajanja sesije.
+
+**Detaljno uputstvo sa svim koracima za tim:** [deploy/TAILSCALE.md](TAILSCALE.md)
+
+Ukratko:
+1. Svi članovi tima kreiraju Tailscale naloge na [tailscale.com](https://tailscale.com) (prijava preko Google ili GitHub)
+2. Jedan član (vlasnik) poziva ostale — sve postaju deo iste privatne mreže
+3. Svako beleži svoju `100.x.y.z` IP adresu iz Tailscale aplikacije
+4. Jedan član pokreće server na svom računaru
+5. Ostali se kroz klijenta povezuju na tu IP adresu + port 5555
 
 ---
 
