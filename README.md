@@ -90,6 +90,14 @@ Za partiju je potrebno pokrenuti najmanje **2 klijenta** (maksimalno 4). U glavn
 
 ---
 
+## Igranje preko interneta
+
+Za partiju van lokalne mreže potrebno je hostovati **samo server** — klijent svako pokreće kod sebe. Uputstvo za besplatnu virtuelnu mašinu na Oracle Cloud-u: [deploy/DEPLOY.md](deploy/DEPLOY.md).
+
+> Igra koristi sirovi TCP soket, pa platforme koje javne servise rutiraju kroz HTTP proxy (Koyeb, Render) nisu pogodne bez posebne plaćene TCP opcije. Obična virtuelna mašina sa javnom IP adresom radi bez ograničenja.
+
+---
+
 ## Rad u NetBeans-u
 
 Projekat se može u potpunosti otvoriti, buildovati i pokrenuti iz NetBeans-a — nije potrebna nijedna dodatna alatka.
