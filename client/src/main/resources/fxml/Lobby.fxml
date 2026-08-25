@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.muvrinovci.lazes.client.controller.LobbyController"
+           styleClass="root">
+
+    <VBox alignment="CENTER" spacing="18" maxWidth="620">
+
+        <Label text="Čekaonica" styleClass="heading"/>
+
+        <VBox spacing="18" styleClass="panel">
+
+            <VBox alignment="CENTER" spacing="6">
+                <Label text="KOD SOBE" styleClass="hint"/>
+                <HBox alignment="CENTER" spacing="14">
+                    <Label fx:id="roomCodeLabel" text="——————" styleClass="room-code"/>
+                    <Button fx:id="copyButton" text="Kopiraj" onAction="#handleCopyCode"/>
+                </HBox>
+                <Label text="Podeli ovaj kod sa prijateljima da sednu za isti sto." styleClass="hint"/>
+            </VBox>
+
+            <Separator/>
+
+            <VBox spacing="8">
+                <Label fx:id="playersHeading" text="Igrači za stolom"/>
+                <VBox fx:id="playerList" spacing="7"/>
+            </VBox>
+
+            <Separator/>
+
+            <VBox spacing="8">
+                <Label text="Boja tvog mesta"/>
+                <HBox fx:id="avatarBox" spacing="12"/>
+            </VBox>
+
+            <Label fx:id="statusLabel" styleClass="hint" wrapText="true"/>
+
+            <HBox spacing="12" alignment="CENTER_RIGHT">
+                <Button fx:id="leaveButton" text="Napusti sobu" onAction="#handleLeave"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="readyButton" text="Spreman sam" onAction="#handleToggleReady"/>
+                <Button fx:id="startButton" text="Pokreni igru" onAction="#handleStart"
+                        styleClass="button-primary" disable="true"/>
+            </HBox>
+        </VBox>
+    </VBox>
+</StackPane>

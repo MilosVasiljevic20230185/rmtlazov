@@ -1,0 +1,334 @@
+/*
+ * Lazes - tamna "noir" tema sa toplim akcentima, po Dokumentu 1, poglavlje 4.1.
+ * Sve je crtano CSS-om i JavaFX oblicima, bez slikovnih fajlova.
+ */
+
+.root {
+    -fx-font-family: "Segoe UI", "Inter", sans-serif;
+
+    -color-bg: #15100c;
+    -color-bg-raised: #221a13;
+    -color-bg-sunken: #0e0a07;
+    -color-felt: #1d3a2e;
+    -color-felt-edge: #123024;
+
+    -color-accent: #d4a24c;
+    -color-accent-dim: #8a6b32;
+    -color-text: #efe6d6;
+    -color-text-dim: #9c8f7c;
+    -color-danger: #c1443a;
+    -color-success: #5c9e5f;
+
+    -fx-background-color: -color-bg;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tipografija                                                         */
+/* ------------------------------------------------------------------ */
+
+.title {
+    -fx-font-size: 64px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-accent;
+    -fx-letter-spacing: 8px;
+}
+
+.subtitle {
+    -fx-font-size: 15px;
+    -fx-text-fill: -color-text-dim;
+    -fx-font-style: italic;
+}
+
+.heading {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-accent;
+}
+
+.label {
+    -fx-text-fill: -color-text;
+    -fx-font-size: 14px;
+}
+
+.hint {
+    -fx-text-fill: -color-text-dim;
+    -fx-font-size: 12px;
+}
+
+.error-text {
+    -fx-text-fill: -color-danger;
+    -fx-font-size: 13px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Paneli                                                              */
+/* ------------------------------------------------------------------ */
+
+.panel {
+    -fx-background-color: -color-bg-raised;
+    -fx-background-radius: 10px;
+    -fx-border-color: rgba(212, 162, 76, 0.25);
+    -fx-border-radius: 10px;
+    -fx-border-width: 1px;
+    -fx-padding: 20px;
+}
+
+.table-felt {
+    -fx-background-color: radial-gradient(center 50% 50%, radius 70%, -color-felt, -color-felt-edge);
+    -fx-background-radius: 200px;
+    -fx-border-color: #3d2a18;
+    -fx-border-width: 10px;
+    -fx-border-radius: 200px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Kontrole                                                            */
+/* ------------------------------------------------------------------ */
+
+.text-field {
+    -fx-background-color: -color-bg-sunken;
+    -fx-text-fill: -color-text;
+    -fx-prompt-text-fill: -color-text-dim;
+    -fx-background-radius: 6px;
+    -fx-border-color: rgba(212, 162, 76, 0.3);
+    -fx-border-radius: 6px;
+    -fx-padding: 9px 12px;
+    -fx-font-size: 14px;
+}
+
+.text-field:focused {
+    -fx-border-color: -color-accent;
+}
+
+.button {
+    -fx-background-color: -color-bg-raised;
+    -fx-text-fill: -color-text;
+    -fx-background-radius: 6px;
+    -fx-border-color: -color-accent-dim;
+    -fx-border-radius: 6px;
+    -fx-border-width: 1px;
+    -fx-padding: 10px 20px;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-border-color: -color-accent;
+    -fx-text-fill: -color-accent;
+}
+
+.button:disabled {
+    -fx-opacity: 0.4;
+    -fx-cursor: default;
+}
+
+.button-primary {
+    -fx-background-color: -color-accent;
+    -fx-text-fill: #1a1208;
+    -fx-font-weight: bold;
+    -fx-border-color: transparent;
+}
+
+.button-primary:hover {
+    -fx-background-color: derive(-color-accent, 15%);
+    -fx-text-fill: #1a1208;
+}
+
+.button-danger {
+    -fx-background-color: -color-danger;
+    -fx-text-fill: #fff3f1;
+    -fx-font-weight: bold;
+    -fx-border-color: transparent;
+}
+
+.button-danger:hover {
+    -fx-background-color: derive(-color-danger, 15%);
+    -fx-text-fill: #ffffff;
+}
+
+.combo-box {
+    -fx-background-color: -color-bg-sunken;
+    -fx-border-color: rgba(212, 162, 76, 0.3);
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: -color-text;
+    -fx-background-color: transparent;
+    -fx-font-size: 14px;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: -color-bg-raised;
+    -fx-border-color: -color-accent-dim;
+}
+
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: -color-accent-dim;
+}
+
+.spinner {
+    -fx-background-color: -color-bg-sunken;
+}
+
+.progress-bar > .track {
+    -fx-background-color: -color-bg-sunken;
+    -fx-background-radius: 4px;
+}
+
+.progress-bar > .bar {
+    -fx-background-color: -color-accent;
+    -fx-background-radius: 4px;
+}
+
+.progress-bar.urgent > .bar {
+    -fx-background-color: -color-danger;
+}
+
+.scroll-pane, .scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+/* ------------------------------------------------------------------ */
+/* Karte                                                               */
+/* ------------------------------------------------------------------ */
+
+.card {
+    -fx-background-color: #f3ece0;
+    -fx-background-radius: 7px;
+    -fx-border-color: #c8bda9;
+    -fx-border-radius: 7px;
+    -fx-border-width: 1px;
+}
+
+.card-back {
+    -fx-background-color: linear-gradient(to bottom right, #7a2b26, #4a1714);
+    -fx-background-radius: 7px;
+    -fx-border-color: #d4a24c;
+    -fx-border-radius: 7px;
+    -fx-border-width: 2px;
+}
+
+.card-selectable {
+    -fx-cursor: hand;
+}
+
+.card-selected {
+    -fx-border-color: -color-accent;
+    -fx-border-width: 3px;
+    -fx-effect: dropshadow(gaussian, rgba(212, 162, 76, 0.8), 14, 0.4, 0, 0);
+}
+
+.card-rank {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+}
+
+.card-suit {
+    -fx-font-size: 30px;
+}
+
+.card-red {
+    -fx-text-fill: #b3352c;
+}
+
+.card-black {
+    -fx-text-fill: #1c1712;
+}
+
+/* ------------------------------------------------------------------ */
+/* Mesta za stolom                                                     */
+/* ------------------------------------------------------------------ */
+
+.seat {
+    -fx-background-color: rgba(0, 0, 0, 0.35);
+    -fx-background-radius: 10px;
+    -fx-border-color: transparent;
+    -fx-border-radius: 10px;
+    -fx-border-width: 2px;
+    -fx-padding: 10px 16px;
+}
+
+.seat-active {
+    -fx-border-color: -color-accent;
+    -fx-effect: dropshadow(gaussian, rgba(212, 162, 76, 0.55), 18, 0.3, 0, 0);
+}
+
+.seat-name {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.seat-cards {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-text-dim;
+}
+
+.avatar-dot {
+    -fx-background-radius: 50%;
+    -fx-min-width: 14px;
+    -fx-min-height: 14px;
+    -fx-max-width: 14px;
+    -fx-max-height: 14px;
+}
+
+.avatar-swatch {
+    -fx-background-radius: 50%;
+    -fx-min-width: 34px;
+    -fx-min-height: 34px;
+    -fx-max-width: 34px;
+    -fx-max-height: 34px;
+    -fx-border-radius: 50%;
+    -fx-border-width: 3px;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+}
+
+.avatar-swatch-selected {
+    -fx-border-color: -color-text;
+}
+
+.avatar-swatch-taken {
+    -fx-opacity: 0.3;
+    -fx-cursor: default;
+}
+
+/* ------------------------------------------------------------------ */
+/* Log poteza                                                          */
+/* ------------------------------------------------------------------ */
+
+.log-entry {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-text-dim;
+    -fx-wrap-text: true;
+}
+
+.log-entry-highlight {
+    -fx-text-fill: -color-accent;
+    -fx-font-weight: bold;
+}
+
+.room-code {
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-accent;
+    -fx-letter-spacing: 6px;
+}
+
+.badge-ready {
+    -fx-text-fill: -color-success;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+
+.badge-waiting {
+    -fx-text-fill: -color-text-dim;
+    -fx-font-size: 13px;
+}
+
+.countdown {
+    -fx-font-size: 110px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-accent;
+}

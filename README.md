@@ -45,8 +45,10 @@ java -version && mvn -v
 ## Build
 
 ```bash
-mvn clean package
+mvn clean install
 ```
+
+> Koristi se `install`, a ne `package`, jer moduli `server` i `client` zavise od modula `shared` — `install` ga smešta u lokalni Maven repozitorijum pa se posle mogu pokretati pojedinačno.
 
 ---
 
@@ -55,30 +57,36 @@ mvn clean package
 ### 1. Server
 
 ```bash
-mvn -pl server exec:java
-```
-
-Server podrazumevano sluša na portu **5555**. Drugi port:
-
-```bash
-mvn -pl server exec:java -Dexec.args="7777"
-```
-
-Alternativno, preko izvršnog jar-a:
-
-```bash
 java -jar server/target/lazes-server.jar
+```
+
+Server podrazumevano sluša na portu **5555**. Drugi port se prosleđuje kao argument:
+
+```bash
+java -jar server/target/lazes-server.jar 7777
+```
+
+Alternativno, preko Mavena:
+
+```bash
+mvn -pl server exec:java
 ```
 
 ### 2. Klijent
 
-U **zasebnom terminalu** (jedan po igraču):
+U **zasebnom terminalu za svakog igrača**:
+
+```bash
+java -jar client/target/lazes-client.jar
+```
+
+Alternativno, preko Mavena:
 
 ```bash
 mvn -pl client javafx:run
 ```
 
-Za partiju je potrebno pokrenuti najmanje **2 klijenta** (maksimalno 4).
+Za partiju je potrebno pokrenuti najmanje **2 klijenta** (maksimalno 4). U glavnom meniju jedan igrač pravi sobu i dobija šestoznamenkasti kod, a ostali se pridružuju tim kodom.
 
 ---
 

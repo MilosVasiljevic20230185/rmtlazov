@@ -242,9 +242,11 @@ public class Room {
                 code, player, result.declaredCount(), result.declaredValue());
 
         sendHand(player);
+        // Prvo novo stanje stola, pa tek onda najava - klijentu je tako poslednja
+        // primljena poruka uvek ona koja odredjuje fazu u kojoj se nalazi.
+        broadcastTurnUpdate();
         broadcast(new PlayAnnouncedMessage(player.getId(), player.getName(),
                 result.declaredCount(), result.declaredValue(), GameRules.CALL_WINDOW_MS));
-        broadcastTurnUpdate();
         startCallWindow();
     }
 

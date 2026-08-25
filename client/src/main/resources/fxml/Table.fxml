@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.muvrinovci.lazes.client.controller.TableController"
+           styleClass="root">
+
+    <BorderPane>
+
+        <!-- Gornja traka: soba i tajmer poteza -->
+        <top>
+            <HBox alignment="CENTER_LEFT" spacing="20">
+                <padding>
+                    <Insets top="14" right="20" bottom="6" left="20"/>
+                </padding>
+
+                <Label fx:id="roomLabel" text="Soba" styleClass="hint"/>
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <VBox spacing="4" prefWidth="280" maxWidth="280">
+                    <Label fx:id="timerLabel" text="" styleClass="hint"/>
+                    <ProgressBar fx:id="timerBar" progress="0" maxWidth="Infinity"/>
+                </VBox>
+            </HBox>
+        </top>
+
+        <!-- Sto: protivnici, centar stola i špil za vučenje -->
+        <center>
+            <VBox spacing="14">
+                <padding>
+                    <Insets top="6" right="10" bottom="6" left="20"/>
+                </padding>
+
+                <HBox fx:id="opponentsBox" alignment="CENTER" spacing="18"/>
+
+                <StackPane VBox.vgrow="ALWAYS">
+                    <VBox fx:id="feltPane" alignment="CENTER" spacing="16" styleClass="table-felt"
+                          maxWidth="720" maxHeight="360">
+
+                        <Label fx:id="tableValueLabel" text="Nova runda" styleClass="heading"/>
+
+                        <HBox alignment="CENTER" spacing="46">
+                            <VBox alignment="CENTER" spacing="8">
+                                <StackPane fx:id="centerPileBox" minHeight="110"/>
+                                <Label fx:id="centerCountLabel" text="Centar: 0" styleClass="hint"/>
+                            </VBox>
+
+                            <VBox alignment="CENTER" spacing="8">
+                                <StackPane fx:id="drawPileBox" minHeight="110"/>
+                                <Label fx:id="drawCountLabel" text="Špil: 0" styleClass="hint"/>
+                            </VBox>
+                        </HBox>
+
+                        <HBox fx:id="revealBox" alignment="CENTER" spacing="8" minHeight="10"/>
+                    </VBox>
+                </StackPane>
+            </VBox>
+        </center>
+
+        <!-- Log poteza -->
+        <right>
+            <VBox spacing="8" prefWidth="270" maxWidth="270" styleClass="panel">
+                <BorderPane.margin>
+                    <Insets top="6" right="16" bottom="6" left="0"/>
+                </BorderPane.margin>
+
+                <Label text="Tok partije" styleClass="heading"/>
+                <Separator/>
+                <ScrollPane fx:id="logScroll" fitToWidth="true" VBox.vgrow="ALWAYS">
+                    <VBox fx:id="logBox" spacing="7"/>
+                </ScrollPane>
+            </VBox>
+        </right>
+
+        <!-- Ruka igrača i akcije -->
+        <bottom>
+            <VBox spacing="10">
+                <padding>
+                    <Insets top="8" right="20" bottom="18" left="20"/>
+                </padding>
+
+                <Separator/>
+
+                <FlowPane fx:id="handPane" hgap="9" vgap="12" alignment="CENTER" prefWrapLength="1000">
+                    <padding>
+                        <Insets top="20" right="0" bottom="4" left="0"/>
+                    </padding>
+                </FlowPane>
+
+                <HBox alignment="CENTER" spacing="14">
+                    <Label fx:id="selectionLabel" text="Izabrano: 0" styleClass="hint"/>
+
+                    <Region minWidth="20"/>
+
+                    <Label text="Najavljujem:"/>
+                    <ComboBox fx:id="valueCombo" prefWidth="130"/>
+
+                    <Button fx:id="playButton" text="Odigraj karte" onAction="#handlePlay"
+                            styleClass="button-primary" disable="true"/>
+                    <Button fx:id="drawButton" text="Vuci kartu" onAction="#handleDraw" disable="true"/>
+                    <Button fx:id="callButton" text="Prozovi laž" onAction="#handleCallLiar"
+                            styleClass="button-danger" disable="true"/>
+                </HBox>
+            </VBox>
+        </bottom>
+    </BorderPane>
+
+    <!-- Preklop: odbrojavanje na početku i ekran kraja partije -->
+    <StackPane fx:id="overlayPane" visible="false" managed="false"
+               style="-fx-background-color: rgba(8, 5, 3, 0.88);">
+        <VBox fx:id="overlayContent" alignment="CENTER" spacing="18" maxWidth="520"/>
+    </StackPane>
+</StackPane>
