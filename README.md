@@ -90,6 +90,45 @@ Za partiju je potrebno pokrenuti najmanje **2 klijenta** (maksimalno 4). U glavn
 
 ---
 
+## Rad u NetBeans-u
+
+Projekat se može u potpunosti otvoriti, buildovati i pokrenuti iz NetBeans-a — nije potrebna nijedna dodatna alatka.
+
+**1. Otvaranje**
+
+`File → Open Project…` i izaberi **koren repozitorijuma** (`rmtlazov`), a ne pojedinačne module. NetBeans prepoznaje parent `pom.xml` i prikazuje `shared`, `server` i `client` kao podmodule.
+
+**2. Build**
+
+Desni klik na `rmtlazov` → **Build**. NetBeans pokreće `mvn install`, čime `shared` ulazi u lokalni Maven repozitorijum — bez toga `server` i `client` ne mogu da se pokrenu zasebno.
+
+**3. Pokretanje servera**
+
+Desni klik na modul `server` → **Run**. U Output prozoru se pojavi:
+
+```
+Lazes server je pokrenut i slusa na portu 5555
+```
+
+**4. Pokretanje klijenata**
+
+Desni klik na modul `client` → **Run**. Za drugog igrača pokreni **Run još jednom** — NetBeans otvara novi Output tab i drugi prozor igre.
+
+Ako ti je zgodnije, drugog igrača možeš pokrenuti i iz terminala:
+
+```bash
+java -jar client/target/lazes-client.jar
+```
+
+**Napomene**
+
+- Glavna klasa klijenta je `Launcher`, **ne** `MainApp`. To je već podešeno u `client/nbactions.xml`. Ako NetBeans ikad zatraži da ručno izabereš glavnu klasu, izaberi `Launcher` — pokretanje preko `MainApp` puca porukom *„JavaFX runtime components are missing"*.
+- JavaFX se povlači kao obična Maven zavisnost, pa **ne treba** ručno instalirati JavaFX SDK.
+- Kod se kompajlira za **Java 21**, pa radi na svakom JDK-u 21 ili novijem. Ako NetBeans prijavi problem sa platformom, dodaj JDK kroz `Tools → Java Platforms`.
+- Server i klijent su nezavisni procesi — server ostaje pokrenut i između partija.
+
+---
+
 ## Struktura projekta
 
 ```

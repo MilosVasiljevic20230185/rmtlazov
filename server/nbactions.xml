@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    NetBeans: "Run" nad server modulom pokrece game server.
+    Bez ovog fajla NetBeans pri prvom pokretanju trazi da rucno izaberes glavnu klasu.
+-->
+<actions>
+    <action>
+        <actionName>run</actionName>
+        <packagings>
+            <packaging>jar</packaging>
+        </packagings>
+        <goals>
+            <goal>process-classes</goal>
+            <goal>org.codehaus.mojo:exec-maven-plugin:3.5.0:exec</goal>
+        </goals>
+        <properties>
+            <exec.executable>java</exec.executable>
+            <exec.args>-classpath %classpath com.muvrinovci.lazes.server.Main</exec.args>
+            <exec.workingdir>${project.basedir}</exec.workingdir>
+        </properties>
+    </action>
+
+    <action>
+        <actionName>debug</actionName>
+        <packagings>
+            <packaging>jar</packaging>
+        </packagings>
+        <goals>
+            <goal>process-classes</goal>
+            <goal>org.codehaus.mojo:exec-maven-plugin:3.5.0:exec</goal>
+        </goals>
+        <properties>
+            <exec.executable>java</exec.executable>
+            <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath com.muvrinovci.lazes.server.Main</exec.args>
+            <exec.workingdir>${project.basedir}</exec.workingdir>
+            <jpda.listen>true</jpda.listen>
+        </properties>
+    </action>
+</actions>
