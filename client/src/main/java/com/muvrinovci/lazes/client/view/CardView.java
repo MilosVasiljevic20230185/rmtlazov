@@ -4,9 +4,11 @@ import com.muvrinovci.lazes.shared.model.Card;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Rectangle;
 
 /**
  * Karta nacrtana u kodu - bez slikovnih fajlova.
@@ -21,6 +23,9 @@ public class CardView extends StackPane {
 
     /** Za koliko se piksela izabrana karta podigne iznad ostalih. */
     private static final double SELECT_LIFT = 18;
+
+    /** Mora da prati {@code -fx-background-radius} iz {@code .card}. */
+    private static final double CORNER_RADIUS = 7;
 
     private final Card card;
     private boolean selected;
@@ -54,24 +59,46 @@ public class CardView extends StackPane {
         String colorClass = card.suit().isRed() ? "card-red" : "card-black";
         String symbol = String.valueOf(card.suit().symbol());
 
-        Label topLeft = new Label(card.rank().label() + "\n" + symbol);
-        topLeft.getStyleClass().addAll("card-rank", colorClass);
-
         Label center = new Label(symbol);
         center.getStyleClass().addAll("card-suit", colorClass);
 
-        Label bottomRight = new Label(symbol + "\n" + card.rank().label());
-        bottomRight.getStyleClass().addAll("card-rank", colorClass);
+        Label topLeft = cornerIndex(card, symbol, colorClass);
+
+        Label bottomRight = cornerIndex(card, symbol, colorClass);
         bottomRight.setRotate(180);
 
         BorderPane face = new BorderPane();
-        face.setPadding(new Insets(5, 7, 5, 7));
+        face.setPadding(new Insets(4, 6, 4, 6));
         face.setTop(topLeft);
         face.setCenter(center);
         face.setBottom(bottomRight);
         BorderPane.setAlignment(bottomRight, Pos.BOTTOM_RIGHT);
 
+        // Sadrzaj se tvrdo ogranicava na podlogu karte, pa oznaka ne moze da
+        // ispadne izvan bele povrsine ni za rangove sa dve cifre (10).
+        Rectangle clip = new Rectangle(WIDTH, HEIGHT);
+        clip.setArcWidth(CORNER_RADIUS * 2);
+        clip.setArcHeight(CORNER_RADIUS * 2);
+        face.setClip(clip);
+
         return face;
+    }
+
+    /**
+     * Ugaona oznaka: rang i ispod njega simbol boje, u jednoj kompaktnoj
+     * koloni. Rang i simbol su odvojeni cvorovi da bi simbol mogao biti manji
+     * od ranga - dvoredna {@code Label} to ne dozvoljava.
+     */
+    private Label cornerIndex(Card card, String symbol, String colorClass) {
+        Label pip = new Label(symbol);
+        pip.getStyleClass().addAll("card-corner-pip", colorClass);
+
+        Label index = new Label(card.rank().label(), pip);
+        index.getStyleClass().addAll("card-rank", colorClass);
+        index.setContentDisplay(ContentDisplay.BOTTOM);
+        index.setGraphicTextGap(0);
+
+        return index;
     }
 
     public Card getCard() {

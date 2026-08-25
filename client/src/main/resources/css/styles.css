@@ -220,13 +220,25 @@
     -fx-effect: dropshadow(gaussian, rgba(212, 162, 76, 0.8), 14, 0.4, 0, 0);
 }
 
+/*
+ * Ugaone oznake i centralni simbol moraju da stanu u visinu karte (106px),
+ * i to sa rezervom - na drugoj masini font moze biti nesto visi. Izmereno:
+ * 2 x ugao (29px) + centar (28px) + padding (8px) = 94px, rezerva 12px.
+ */
 .card-rank {
-    -fx-font-size: 17px;
+    -fx-font-size: 15px;
     -fx-font-weight: bold;
+    -fx-padding: 0;
+}
+
+.card-corner-pip {
+    -fx-font-size: 10px;
+    -fx-padding: 0;
 }
 
 .card-suit {
-    -fx-font-size: 30px;
+    -fx-font-size: 23px;
+    -fx-padding: 0;
 }
 
 .card-red {

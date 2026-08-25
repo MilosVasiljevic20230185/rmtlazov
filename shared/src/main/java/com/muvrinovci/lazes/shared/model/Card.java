@@ -1,5 +1,6 @@
 package com.muvrinovci.lazes.shared.model;
 
+import java.util.Comparator;
 import java.util.Objects;
 
 /**
@@ -14,6 +15,16 @@ import java.util.Objects;
  * {@code 10D2}, {@code AS1}.</p>
  */
 public record Card(Rank rank, Suit suit, int deckIndex) {
+
+    /**
+     * Redosled za prikaz ruke: prvo po vrednosti (1-13), pa po boji, pa po
+     * spilu. Time iste vrednosti stoje jedna uz drugu, sto igracu olaksava da
+     * vidi koliko ima karata trazene vrednosti.
+     */
+    public static final Comparator<Card> BY_VALUE = Comparator
+            .comparingInt(Card::value)
+            .thenComparing(Card::suit)
+            .thenComparingInt(Card::deckIndex);
 
     public Card {
         Objects.requireNonNull(rank, "rank");
