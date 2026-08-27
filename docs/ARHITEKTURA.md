@@ -60,6 +60,16 @@ rmtlazov/
 
 ## 3. Mrežni sloj
 
+### 3.0 Mapa saradnje klasa
+
+Klase sa crvenom ivicom čine mrežni sloj (rade sa soketom); plave koriste JavaFX; bež su zajednički protokol.
+
+![Mapa saradnje klasa](img/mapa-klasa.png)
+
+Ista poruka putuje kroz `JsonCodec` četiri puta — encode i decode na svakoj strani:
+
+![Put jedne poruke kroz mrežni sloj](img/put-poruke.png)
+
 ### 3.1 Zašto TCP a ne UDP
 
 TCP garantuje da poruke stižu **i to redosledom kojim su poslate**. Za ovu igru je to obavezno — ako bi „bacio si 3 sedmice" stiglo pre „nova runda počinje", klijent bi prikazao besmislicu. Igra je na poteze, pa nam kašnjenje od par desetina milisekundi ništa ne znači; pouzdanost nam znači sve.
