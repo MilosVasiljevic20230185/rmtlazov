@@ -52,9 +52,7 @@ public class LobbyController implements ScreenController {
                 + " igrača, a najviše " + GameRules.MAX_PLAYERS + ".");
     }
 
-    // ------------------------------------------------------------------
     // Akcije korisnika
-    // ------------------------------------------------------------------
 
     @FXML
     private void handleCopyCode() {
@@ -84,9 +82,7 @@ public class LobbyController implements ScreenController {
         navigator.showMainMenu();
     }
 
-    // ------------------------------------------------------------------
     // Poruke sa servera
-    // ------------------------------------------------------------------
 
     @Override
     public void onMessage(Message message) {

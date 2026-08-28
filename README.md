@@ -186,4 +186,7 @@ Projektna dokumentacija nalazi se u folderu `docs/`:
 - `02_user_stories.docx` — korisnički zahtevi (MoSCoW)
 - `03_tehnicka_specifikacija.docx` — arhitektura, protokol i tehnološki stek
 
-Uz to, [docs/ARHITEKTURA.md](docs/ARHITEKTURA.md) detaljno objašnjava kod, sa težištem na mrežnom sloju — namenjeno članovima tima.
+Uz to, za članove tima:
+
+- [docs/ARHITEKTURA.md](docs/ARHITEKTURA.md) — detaljno objašnjenje koda, sa težištem na mrežnom sloju, i dijagrami saradnje klasa
+- [docs/objasnjenja.md](docs/objasnjenja.md) — pitanja i odgovori za pripremu odbrane (record, TCP soket, `JsonCodec`, `actionToken`…)
