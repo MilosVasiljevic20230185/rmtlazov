@@ -6,12 +6,6 @@ import java.util.concurrent.CountDownLatch;
 import com.muvrinovci.lazes.server.util.Log;
 import com.muvrinovci.lazes.shared.GameRules;
 
-/**
- * Ulazna tacka game servera.
- *
- * <p>Pokretanje: {@code mvn -pl server exec:java} ili
- * {@code java -jar lazes-server.jar [port]}.</p>
- */
 public final class Main {
 
     private Main() {
@@ -44,7 +38,7 @@ public final class Main {
 
     /**
      * Port se bira ovim redosledom: argument komandne linije, pa promenljiva
-     * okruzenja {@code PORT}, pa podrazumevani {@value GameRules#DEFAULT_PORT}.
+     * okruzenja  PORT, pa podrazumevani  GameRules#DEFAULT_POR}.
      * Promenljiva okruzenja je tu zbog hostovanja, gde port cesto zadaje platforma.
      */
     private static int parsePort(String[] args) {

@@ -14,8 +14,8 @@ import com.muvrinovci.lazes.shared.protocol.dto.ErrorMessage;
 /**
  * Vodi evidenciju o svim sobama na serveru.
  *
- * <p>Sam registar soba je konkurentan jer mu pristupaju niti raznih konekcija,
- * ali se stanje pojedinacne sobe uvek menja iz njene sopstvene niti.</p>
+ * Sam registar soba je konkurentan jer mu pristupaju niti raznih konekcija,
+ * ali se stanje pojedinacne sobe uvek menja iz njene sopstvene niti.
  */
 public class RoomManager {
 

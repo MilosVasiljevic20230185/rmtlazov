@@ -17,8 +17,8 @@ public final class Deck {
     }
 
     /**
-     * Sastavlja spil od {@value GameRules#DECK_COPIES} standardna spila
-     * (ukupno {@value GameRules#TOTAL_CARDS} karata) i mesa ga.
+     * Sastavlja spil od  GameRules#DECK_COPIES standardna spila
+     * (ukupno GameRules#TOTAL_CARDS karata) i mesa ga.
      */
     public static List<Card> buildShuffled(Random random) {
         List<Card> cards = new ArrayList<>(GameRules.TOTAL_CARDS);

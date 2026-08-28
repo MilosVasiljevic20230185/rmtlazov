@@ -1,7 +1,7 @@
 package com.muvrinovci.lazes.shared.protocol;
 
 /**
- * Kodovi gresaka koje server salje klijentu u {@code error} poruci.
+ * Kodovi gresaka koje server salje klijentu u  error poruci.
  * Klijent na osnovu koda prikazuje odgovarajucu poruku korisniku.
  */
 public final class ErrorCode {

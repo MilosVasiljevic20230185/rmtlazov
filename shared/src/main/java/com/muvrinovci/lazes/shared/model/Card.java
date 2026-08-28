@@ -6,13 +6,11 @@ import java.util.Objects;
 /**
  * Jedna karta iz kombinovanog spila.
  *
- * <p>Posto se igra sa dva standardna spila, ista kombinacija ranga i boje
- * postoji dva puta. Zbog toga svaka karta nosi i {@code deckIndex} (1 ili 2),
- * pa je njen {@link #id()} jedinstven u celoj partiji - server po tom
- * identifikatoru proverava da li igrac zaista poseduje karte koje baca.</p>
+ * Posto se igra sa dva standardna spila, ista kombinacija ranga i boje
+ * postoji dva puta. Zbog toga svaka karta nosi i deckIndex (1 ili 2),
+ * pa je njen id jedinstven u celoj partiji. Server po tom
+ * identifikatoru proverava da li igrac zaista poseduje karte koje baca.
  *
- * <p>Format identifikatora: {@code <rang><boja><spil>}, npr. {@code 7H1},
- * {@code 10D2}, {@code AS1}.</p>
  */
 public record Card(Rank rank, Suit suit, int deckIndex) {
 
@@ -34,12 +32,12 @@ public record Card(Rank rank, Suit suit, int deckIndex) {
         }
     }
 
-    /** Jedinstveni identifikator karte koji se salje kroz mrezni protokol. */
+
     public String id() {
         return rank.label() + suit.code() + deckIndex;
     }
 
-    /** Vrednost karte 1-13; poredi se sa deklarisanom vrednoscu prilikom prozivanja. */
+
     public int value() {
         return rank.value();
     }

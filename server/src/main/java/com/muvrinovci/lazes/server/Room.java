@@ -40,10 +40,10 @@ import com.muvrinovci.lazes.shared.protocol.dto.TurnUpdateMessage;
 /**
  * Jedna soba, odnosno jedan sto za igru.
  *
- * <p>Sve stanje sobe menja se iskljucivo iz njene jedne niti ({@link #executor}).
- * Svaka poruka i svaki istekli tajmer se prosledjuju kroz {@link #submit(Runnable)},
- * pa se akcije obradjuju strogo sekvencijalno - zbog toga nema zakljucavanja i
- * nije moguce da dve istovremene {@code call_liar} poruke obe prodju.</p>
+ * Sve stanje sobe menja se iskljucivo iz njene jedne niti executor.
+ * Svaka poruka i svaki istekli tajmer se prosledjuju kroz submit(Runnable),
+ * pa se akcije obradjuju strogo sekvencijalno, zbog toga nema zakljucavanja i
+ * nije moguce da dve istovremene call_liar poruke obe prodju.
  */
 public class Room {
 
@@ -100,9 +100,9 @@ public class Room {
         executor.shutdownNow();
     }
 
-    // ------------------------------------------------------------------
+
     // Ulazak i izlazak
-    // ------------------------------------------------------------------
+
 
     /** Pokusaj ulaska u sobu; odgovor (potvrda ili greska) salje se samom igracu. */
     void join(ServerPlayer player, boolean asHost) {
@@ -164,9 +164,9 @@ public class Room {
         }
     }
 
-    // ------------------------------------------------------------------
+
     // Obrada poruka
-    // ------------------------------------------------------------------
+
 
     void handle(ServerPlayer player, Message message) {
         if (!players.contains(player)) {
@@ -242,7 +242,7 @@ public class Room {
                 code, player, result.declaredCount(), result.declaredValue());
 
         sendHand(player);
-        // Prvo novo stanje stola, pa tek onda najava - klijentu je tako poslednja
+        // Prvo novo stanje stola, pa tek onda najava, klijentu je tako poslednja
         // primljena poruka uvek ona koja odredjuje fazu u kojoj se nalazi.
         broadcastTurnUpdate();
         broadcast(new PlayAnnouncedMessage(player.getId(), player.getName(),
@@ -288,9 +288,9 @@ public class Room {
         startTurnTimer();
     }
 
-    // ------------------------------------------------------------------
+
     // Tok partije
-    // ------------------------------------------------------------------
+
 
     private void startGame() {
         state = RoomState.IN_GAME;
@@ -317,7 +317,7 @@ public class Room {
         startTurnTimer();
     }
 
-    /** Istekao je tajmer poteza - server igra umesto igraca koji nije reagovao. */
+    /** Istekao je tajmer poteza server igra umesto igraca koji nije reagovao. */
     private void onTurnTimeout(long token) {
         if (token != actionToken || state != RoomState.IN_GAME) {
             return;
@@ -388,9 +388,9 @@ public class Room {
         broadcast(new GameOverMessage(winnerId, knownNames.get(winnerId), ranking));
     }
 
-    // ------------------------------------------------------------------
+
     // Tajmeri
-    // ------------------------------------------------------------------
+
 
     private void startTurnTimer() {
         cancelTimer();
@@ -413,9 +413,9 @@ public class Room {
         }
     }
 
-    // ------------------------------------------------------------------
+
     // Slanje stanja
-    // ------------------------------------------------------------------
+
 
     private void broadcast(Message message) {
         players.forEach(player -> player.send(message));
@@ -459,9 +459,9 @@ public class Room {
         }
     }
 
-    // ------------------------------------------------------------------
+
     // Pomocne metode
-    // ------------------------------------------------------------------
+
 
     private ServerPlayer findPlayer(String playerId) {
         return players.stream().filter(p -> p.getId().equals(playerId)).findFirst().orElse(null);

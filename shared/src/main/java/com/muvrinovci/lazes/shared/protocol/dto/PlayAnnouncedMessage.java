@@ -6,8 +6,8 @@ import com.muvrinovci.lazes.shared.protocol.MessageType;
 /**
  * Server -> Klijent: emitovanje odigranog poteza, bez otkrivanja karata.
  *
- * <p>Nakon ove poruke otvara se prozor od {@code callWindowMs} milisekundi
- * u kom ostali igraci mogu poslati {@code call_liar}.</p>
+ * Nakon ove poruke otvara se prozor od callWindowMs milisekundi
+ * u kom ostali igraci mogu poslati  call_liar
  */
 public class PlayAnnouncedMessage extends Message {
 

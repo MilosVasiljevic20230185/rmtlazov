@@ -8,8 +8,8 @@ import com.muvrinovci.lazes.shared.protocol.MessageType;
 /**
  * Server -> Klijent: privatno azuriranje ruke.
  *
- * <p>Ova poruka se salje iskljucivo klijentu cija se ruka menja, nikada
- * protivnicima - oni saznaju samo broj karata kroz {@code turn_update}.</p>
+ * Ova poruka se salje iskljucivo klijentu cija se ruka menja, nikada
+ * protivnicima, oni saznaju samo broj karata kroz turn_update
  */
 public class HandUpdateMessage extends Message {
 

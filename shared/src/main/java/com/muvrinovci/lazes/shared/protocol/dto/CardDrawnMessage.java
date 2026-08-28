@@ -6,8 +6,8 @@ import com.muvrinovci.lazes.shared.protocol.MessageType;
 /**
  * Server -> Klijent: igrac je povukao kartu sa centralnog spila.
  *
- * <p>Salje se svima radi log prikaza; sama karta se ne otkriva - vlasnik je
- * saznaje kroz privatnu {@code hand_update} poruku.</p>
+ * Salje se svima radi log prikaza; sama karta se ne otkriva, vlasnik je
+ * saznaje kroz privatnu hand_update poruku.
  */
 public class CardDrawnMessage extends Message {
 
@@ -34,7 +34,7 @@ public class CardDrawnMessage extends Message {
         return playerName;
     }
 
-    /** {@code true} kada je server povukao kartu umesto igraca po isteku tajmera. */
+    /** true kada je server povukao kartu umesto igraca po isteku tajmera. */
     public boolean isAutomatic() {
         return automatic;
     }

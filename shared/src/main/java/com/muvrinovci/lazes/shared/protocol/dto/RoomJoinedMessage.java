@@ -6,9 +6,9 @@ import com.muvrinovci.lazes.shared.protocol.MessageType;
 /**
  * Server -> Klijent: potvrda ulaska u sobu.
  *
- * <p>Ovom porukom klijent saznaje SVOJ {@code playerId}, koji mu je dalje
- * neophodan da bi u {@code turn_update} i {@code lobby_state} porukama
- * prepoznao sebe medju ostalim igracima.</p>
+ * Ovom porukom klijent saznaje SVOJ  playerId, koji mu je dalje
+ * neophodan da bi u turn_update i  lobby_state porukama
+ * prepoznao sebe medju ostalim igracima.
  */
 public class RoomJoinedMessage extends Message {
 
