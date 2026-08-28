@@ -31,9 +31,9 @@ import com.muvrinovci.lazes.shared.protocol.dto.TurnUpdateMessage;
 /**
  * Serijalizacija i deserijalizacija poruka protokola.
  *
- * <p>Poruke putuju kao JSON objekti, jedan po redu (newline-delimited) preko
+ * Poruke putuju kao JSON objekti, jedan po redu (newline-delimited) preko
  * TCP konekcije. Posto Gson ne zna sam da prepozna podtip, prilikom citanja se
- * prvo procita polje {@code type}, pa se preko registra odredi konkretna klasa.</p>
+ * prvo procita polje type, pa se preko registra odredi konkretna klasa.
  */
 public final class JsonCodec {
 
@@ -76,7 +76,7 @@ public final class JsonCodec {
      * Cita poruku iz JSON teksta.
      *
      * @throws ProtocolException ako tekst nije validan JSON objekat,
-     *                           ako nema polje {@code type} ili ako je tip nepoznat
+     *                           ako nema polje type ili ako je tip nepoznat
      */
     public static Message decode(String json) throws ProtocolException {
         JsonObject object;

@@ -6,7 +6,7 @@ import com.muvrinovci.lazes.shared.protocol.MessageType;
 
 /**
  * Server -> Klijent: greska pri obradi akcije.
- * Kodovi su definisani u {@link ErrorCode}.
+ * Kodovi su definisani u ErrorCode.
  */
 public class ErrorMessage extends Message {
 

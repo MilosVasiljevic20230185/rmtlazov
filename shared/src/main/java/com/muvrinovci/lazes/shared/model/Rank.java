@@ -1,7 +1,7 @@
 package com.muvrinovci.lazes.shared.model;
 
 /**
- * Vrednost (rang) karte, 1-13. As je 1, kralj je 13 - dzokera nema.
+ * Vrednost (rang) karte, 1-13. As je 1, kralj je 13, dzokera nema.
  * Ovaj broj je ujedno i vrednost koju igrac deklarise kada baca karte.
  */
 public enum Rank {
@@ -20,9 +20,7 @@ public enum Rank {
     QUEEN(12, "Q", "dame"),
     KING(13, "K", "kralja");
 
-    /** Najmanja deklarabilna vrednost. */
     public static final int MIN_VALUE = 1;
-    /** Najveca deklarabilna vrednost. */
     public static final int MAX_VALUE = 13;
 
     private final int value;

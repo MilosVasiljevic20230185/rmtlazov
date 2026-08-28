@@ -174,7 +174,7 @@ Protokol iz Dokumenta 3 dopunjen je porukama `start_game`, `room_joined`, `set_a
 mvn test
 ```
 
-Pokriveno je **31 test**: model karata i protokol, sva pravila igre kroz sve faze partije, i **5 integracionih testova** koji igraju partiju kroz pravi TCP soket.
+Pokriveno je **43 testa**: model karata i protokol, sva pravila igre kroz sve faze partije, i **5 integracionih testova** koji igraju partiju kroz pravi TCP soket.
 
 ---
 
@@ -185,3 +185,5 @@ Projektna dokumentacija nalazi se u folderu `docs/`:
 - `01_koncept_igre.docx` — koncept, pravila i opseg projekta
 - `02_user_stories.docx` — korisnički zahtevi (MoSCoW)
 - `03_tehnicka_specifikacija.docx` — arhitektura, protokol i tehnološki stek
+
+Uz to, [docs/ARHITEKTURA.md](docs/ARHITEKTURA.md) detaljno objašnjava kod, sa težištem na mrežnom sloju — namenjeno članovima tima.

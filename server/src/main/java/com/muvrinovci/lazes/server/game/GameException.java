@@ -2,8 +2,8 @@ package com.muvrinovci.lazes.server.game;
 
 /**
  * Akcija igraca je odbijena jer krsi pravila igre.
- * {@code code} odgovara konstantama iz
- * {@link com.muvrinovci.lazes.shared.protocol.ErrorCode} i salje se klijentu.
+ * code odgovara konstantama iz
+ * ErrorCode i salje se klijentu.
  */
 public class GameException extends RuntimeException {
 

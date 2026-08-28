@@ -18,21 +18,21 @@ import com.muvrinovci.lazes.shared.model.Rank;
 import com.muvrinovci.lazes.shared.protocol.ErrorCode;
 
 /**
- * Pravila igre "Lazes" - jedini autoritet nad stanjem partije.
+ * Pravila igre "Lazes" , jedini autoritet nad stanjem partije.
  *
- * <p>Klasa je namerno bez ikakve mrezne logike: prima akcije igraca, proverava
+ * Klasa je namerno bez ikakve mrezne logike: prima akcije igraca, proverava
  * ih i vraca ishod. Nije thread-safe, ali joj to nije ni potrebno - svaka
- * {@code Room} je poziva iz svoje jedne niti, pa se stanje menja sekvencijalno.</p>
+ * code Room je poziva iz svoje jedne niti, pa se stanje menja sekvencijalno.
  *
- * <p>Tok jedne runde:</p>
- * <ol>
- *   <li>Igrac na potezu baca karte ({@link #playCards}) ili vuce kartu ({@link #drawCard}).</li>
- *   <li>Nakon bacanja partija ulazi u {@link GamePhase#CALL_WINDOW}.</li>
- *   <li>Ako neko prozove ({@link #callLiar}) - karte se otkrivaju, gubitnik kupi centar
- *       i runda se zavrsava (vrednost runde se resetuje).</li>
- *   <li>Ako niko ne prozove ({@link #closeCallWindow}) - red ide dalje, a vrednost
- *       runde ostaje ista.</li>
- * </ol>
+ * Tok jedne runde:
+ * 
+ *   Igrac na potezu baca karte (playCards) ili vuce kartu (drawCard).
+ *   Nakon bacanja partija ulazi u CALL_WINDOW.
+ *   Ako neko prozove (callLiar) - karte se otkrivaju, gubitnik kupi centar
+ *       i runda se zavrsava (vrednost runde se resetuje).
+ *   Ako niko ne prozove (closeCallWindow) red ide dalje, a vrednost
+ *       runde ostaje ista.
+ * 
  */
 public class GameEngine {
 
@@ -78,7 +78,7 @@ public class GameEngine {
     private String winnerId;
 
     /**
-     * Sastavlja spil, deli po {@value GameRules#INITIAL_HAND_SIZE} karata svakom
+     * Sastavlja spil, deli po INITIAL_HAND_SIZE karata svakom
      * igracu i nasumicno bira ko zapocinje partiju.
      */
     public GameEngine(List<String> playerIds, Random random) {
@@ -108,13 +108,13 @@ public class GameEngine {
         this.currentIndex = startingIndex;
     }
 
-    // ------------------------------------------------------------------
+
     // Akcije igraca
-    // ------------------------------------------------------------------
+
 
     /**
      * Igrac na potezu baca karte i deklarise njihovu vrednost.
-     * Karte odlaze na centar okrenute nadole; istinitost izjave se proverava
+     * Karte odlaze na centar okrenute nadole, istinitost izjave se proverava
      * tek ako ga neko prozove.
      */
     public PlayResult playCards(String playerId, List<String> cardIds, int declaredValue) {
@@ -181,9 +181,9 @@ public class GameEngine {
     /**
      * Igrac proziva onoga ko je upravo odigrao potez.
      *
-     * <p>Karte se otkrivaju i porede sa deklarisanom vrednoscu: ako je optuzeni
-     * lagao, on kupi centar i prozivac je sledeci na potezu; ako je govorio
-     * istinu, prozivac kupi centar, a optuzeni igra ponovo.</p>
+     * Karte se otkrivaju i porede sa deklarisanom vrednoscu: ako je optuzeni
+     * lagao, on kupi centar i prozivac je sledeci na potezu, ako je govorio
+     * istinu, prozivac kupi centar, a optuzeni igra ponovo.
      */
     public CallResolution callLiar(String callerId) {
         requirePhase(GamePhase.CALL_WINDOW);
@@ -206,7 +206,7 @@ public class GameEngine {
         hands.get(collectorId).addAll(center);
         center.clear();
 
-        // Prozivanje zatvara rundu - sledeci igrac slobodno bira novu vrednost.
+        // Prozivanje zatvara rundu, sledeci igrac slobodno bira novu vrednost.
         tableValue = OPEN_ROUND;
         pendingPlay = null;
 
@@ -218,7 +218,7 @@ public class GameEngine {
             finish(winner);
             nextPlayerId = null;
         } else {
-            // Lagao je -> prozivac je sledeci. Govorio je istinu -> optuzeni igra ponovo.
+            // Lagao je, prozivac je sledeci. Govorio je istinu, optuzeni igra ponovo.
             setCurrentPlayer(wasLying ? callerId : accusedId);
             phase = GamePhase.TURN;
             nextPlayerId = currentPlayerId();
@@ -230,7 +230,7 @@ public class GameEngine {
 
     /**
      * Istekao je prozor za prozivanje, a niko nije prozvao.
-     * Karte ostaju na centru, vrednost runde ostaje ista, red ide dalje -
+     * Karte ostaju na centru, vrednost runde ostaje ista, red ide dalje,
      * osim ako je igrac odigrao svoje poslednje karte, u kom slucaju je pobedio.
      */
     public WindowCloseResult closeCallWindow() {
@@ -253,7 +253,6 @@ public class GameEngine {
      * Uklanja odspojenog igraca iz partije; njegove karte izlaze iz igre.
      * Ako ostane samo jedan igrac, on automatski pobedjuje.
      *
-     * @return {@code true} ako je igrac zaista bio u partiji
      */
     public boolean removePlayer(String playerId) {
         int removedIndex = playerIds.indexOf(playerId);
@@ -275,7 +274,7 @@ public class GameEngine {
         }
 
         if (wasAccused) {
-            // Potez onoga ko je otisao vise nema ko da proziva - karte ostaju na centru.
+            // Potez onoga ko je otisao vise nema ko da proziva, karte ostaju na centru.
             pendingPlay = null;
             phase = GamePhase.TURN;
             currentIndex = removedIndex % playerIds.size();
@@ -288,9 +287,9 @@ public class GameEngine {
         return true;
     }
 
-    // ------------------------------------------------------------------
+
     // Citanje stanja
-    // ------------------------------------------------------------------
+
 
     public List<String> playerIds() {
         return Collections.unmodifiableList(playerIds);
@@ -317,7 +316,7 @@ public class GameEngine {
         return drawPile.size();
     }
 
-    /** Vrednost koju svi u tekucoj rundi moraju deklarisati; {@link #OPEN_ROUND} ako je runda otvorena. */
+    /** Vrednost koju svi u tekucoj rundi moraju deklarisati OPEN_ROUND ako je runda otvorena. */
     public int tableValue() {
         return tableValue;
     }
@@ -347,9 +346,9 @@ public class GameEngine {
         return result;
     }
 
-    // ------------------------------------------------------------------
+
     // Pomocne metode
-    // ------------------------------------------------------------------
+
 
     private void requirePhase(GamePhase expected) {
         if (phase != expected) {
@@ -390,7 +389,7 @@ public class GameEngine {
         this.pendingPlay = null;
     }
 
-    /** Sve karte koje se trenutno nalaze na centru stola - koristi se samo u testovima. */
+
     Set<Card> centerCards() {
         return new HashSet<>(center);
     }

@@ -48,9 +48,9 @@ import javafx.util.StringConverter;
 /**
  * Sto za igru: ruka igraca, centar stola, akcije i tok partije.
  *
- * <p>Kontroler ne odlucuje ni o cemu sto se tice pravila - samo prikazuje stanje
+ * Kontroler ne odlucuje ni o cemu sto se tice pravila, samo prikazuje stanje
  * koje je server poslao i salje akcije nazad. Dugmad se omogucavaju/onemogucavaju
- * prema fazi poteza, ali konacnu rec ima server.</p>
+ * prema fazi poteza, ali konacnu rec ima server.
  */
 public class TableController implements ScreenController {
 
@@ -86,7 +86,7 @@ public class TableController implements ScreenController {
     private ViewNavigator navigator;
     private final List<CardView> handCards = new ArrayList<>();
 
-    /** Imena igraca po identifikatoru, popunjena iz {@code turn_update} poruka. */
+    /** Imena igraca po identifikatoru, popunjena iz  turn_update poruka. */
     private final Map<String, String> namesById = new HashMap<>();
 
     private String currentPlayerId;
@@ -101,9 +101,7 @@ public class TableController implements ScreenController {
     private double timerRemaining;
     private String timerPrefix = "";
 
-    // ------------------------------------------------------------------
     // Priprema ekrana
-    // ------------------------------------------------------------------
 
     @Override
     public void init(ViewNavigator navigator) {
@@ -152,9 +150,7 @@ public class TableController implements ScreenController {
         countdown.play();
     }
 
-    // ------------------------------------------------------------------
     // Akcije korisnika
-    // ------------------------------------------------------------------
 
     @FXML
     private void handlePlay() {
@@ -183,9 +179,7 @@ public class TableController implements ScreenController {
                 .toList();
     }
 
-    // ------------------------------------------------------------------
     // Poruke sa servera
-    // ------------------------------------------------------------------
 
     @Override
     public void onMessage(Message message) {
@@ -331,9 +325,7 @@ public class TableController implements ScreenController {
         updateControls();
     }
 
-    // ------------------------------------------------------------------
     // Iscrtavanje stola
-    // ------------------------------------------------------------------
 
     private void renderOpponents(List<TurnUpdateMessage.PlayerInfo> players) {
         opponentsBox.getChildren().clear();
@@ -369,7 +361,7 @@ public class TableController implements ScreenController {
         }
     }
 
-    /** Sicusan prikaz protivnickih karata - uvek okrenutih nadole. */
+    /**prikaz protivnickih karata uvek okrenutih nadole. */
     private HBox miniHand(int cardCount) {
         HBox mini = new HBox(-14);
         mini.setAlignment(Pos.CENTER);
@@ -437,9 +429,7 @@ public class TableController implements ScreenController {
         pause.play();
     }
 
-    // ------------------------------------------------------------------
     // Dugmad i tajmer
-    // ------------------------------------------------------------------
 
     private void updateControls() {
         int selected = selectedCardIds().size();
@@ -503,9 +493,7 @@ public class TableController implements ScreenController {
         }
     }
 
-    // ------------------------------------------------------------------
-    // Log i preklop
-    // ------------------------------------------------------------------
+    // Log 
 
     private void addLog(String text, boolean highlight) {
         Label entry = new Label(text);

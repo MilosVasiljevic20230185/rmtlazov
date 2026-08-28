@@ -62,8 +62,6 @@ public class LobbyController implements ScreenController {
         content.putString(navigator.getSession().getRoomCode());
         Clipboard.getSystemClipboard().setContent(content);
 
-        copyButton.setText("Kopirano");
-        copyButton.setDisable(true);
     }
 
     @FXML

@@ -8,8 +8,8 @@ import com.muvrinovci.lazes.shared.protocol.MessageType;
 /**
  * Server -> Klijent: ishod prozivanja.
  *
- * <p>{@code wasLying} govori da li je optuzeni igrac zaista lagao,
- * a {@code cardsCollectedBy} ko zbog toga uzima sve karte sa centra stola.</p>
+ * wasLying govori da li je optuzeni igrac zaista lagao,
+ * a cardsCollectedBy ko zbog toga uzima sve karte sa centra stola.
  */
 public class CallResultMessage extends Message {
 
@@ -20,7 +20,7 @@ public class CallResultMessage extends Message {
     private int declaredValue;
     private boolean wasLying;
 
-    /** Karte koje su bile odigrane u poslednjem potezu - sada otkrivene svima. */
+    /** Karte koje su bile odigrane u poslednjem potezu, sada otkrivene svima. */
     private List<String> revealedCards;
 
     private String cardsCollectedBy;

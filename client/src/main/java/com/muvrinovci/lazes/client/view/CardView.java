@@ -11,20 +11,15 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle;
 
 /**
- * Karta nacrtana u kodu - bez slikovnih fajlova.
- *
- * <p>Lice karte prikazuje oznaku ranga u dva ugla i veliki Unicode simbol boje
- * u sredini; nalicje je jednobojna pozadina sa zlatnim okvirom.</p>
+ * Karta nacrtana u kodu 
  */
 public class CardView extends StackPane {
 
     public static final double WIDTH = 74;
     public static final double HEIGHT = 106;
 
-    /** Za koliko se piksela izabrana karta podigne iznad ostalih. */
     private static final double SELECT_LIFT = 18;
 
-    /** Mora da prati {@code -fx-background-radius} iz {@code .card}. */
     private static final double CORNER_RADIUS = 7;
 
     private final Card card;
@@ -35,7 +30,6 @@ public class CardView extends StackPane {
         this(card, true);
     }
 
-    /** Karta ciji je sadrzaj sakriven ({@code card} sme biti {@code null}). */
     public static CardView faceDown() {
         return new CardView(null, false);
     }
@@ -74,8 +68,6 @@ public class CardView extends StackPane {
         face.setBottom(bottomRight);
         BorderPane.setAlignment(bottomRight, Pos.BOTTOM_RIGHT);
 
-        // Sadrzaj se tvrdo ogranicava na podlogu karte, pa oznaka ne moze da
-        // ispadne izvan bele povrsine ni za rangove sa dve cifre (10).
         Rectangle clip = new Rectangle(WIDTH, HEIGHT);
         clip.setArcWidth(CORNER_RADIUS * 2);
         clip.setArcHeight(CORNER_RADIUS * 2);
@@ -84,11 +76,6 @@ public class CardView extends StackPane {
         return face;
     }
 
-    /**
-     * Ugaona oznaka: rang i ispod njega simbol boje, u jednoj kompaktnoj
-     * koloni. Rang i simbol su odvojeni cvorovi da bi simbol mogao biti manji
-     * od ranga - dvoredna {@code Label} to ne dozvoljava.
-     */
     private Label cornerIndex(Card card, String symbol, String colorClass) {
         Label pip = new Label(symbol);
         pip.getStyleClass().addAll("card-corner-pip", colorClass);
@@ -105,7 +92,7 @@ public class CardView extends StackPane {
         return card;
     }
 
-    /** Oznacava kartu kao kliktabilnu (koristi se samo za karte u sopstvenoj ruci). */
+
     public void makeSelectable() {
         getStyleClass().add("card-selectable");
     }

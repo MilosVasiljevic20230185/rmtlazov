@@ -1,11 +1,9 @@
 package com.muvrinovci.lazes.shared.protocol;
 
-/**
- * Vrednosti polja {@code type} koje nosi svaka poruka protokola.
- */
+
 public final class MessageType {
 
-    // ----- Klijent -> Server -----
+    // Klijent -> Server 
     public static final String CREATE_ROOM = "create_room";
     public static final String JOIN_ROOM = "join_room";
     public static final String PLAYER_READY = "player_ready";
@@ -16,7 +14,7 @@ public final class MessageType {
     public static final String DRAW_CARD = "draw_card";
     public static final String LEAVE_ROOM = "leave_room";
 
-    // ----- Server -> Klijent -----
+    //  Server -> Klijent 
     public static final String ROOM_JOINED = "room_joined";
     public static final String LOBBY_STATE = "lobby_state";
     public static final String GAME_START = "game_start";

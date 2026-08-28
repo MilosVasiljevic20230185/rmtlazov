@@ -9,10 +9,9 @@ import java.util.concurrent.Executors;
 import com.muvrinovci.lazes.server.util.Log;
 
 /**
- * Game server: slusa na portu i za svaku konekciju pokrece {@link ClientHandler}.
+ * Game server: slusa na portu i za svaku konekciju pokrece  ClientHandler.
  *
- * <p>Izdvojeno iz {@link Main} da bi server mogao da se pokrene i zaustavi
- * programski - tako ga koriste integracioni testovi.</p>
+ * Izdvojeno iz  Main da bi server mogao da se pokrene i zaustavi
  */
 public class GameServer {
 
@@ -25,7 +24,7 @@ public class GameServer {
     /**
      * Pokrece server i odmah se vraca; prihvatanje konekcija tece u zasebnoj niti.
      *
-     * @param port port na kome server slusa; {@code 0} znaci da ga bira operativni sistem
+     * port na kome server slusa;  0 znaci da ga bira operativni sistem
      */
     public void start(int port) throws IOException {
         serverSocket = new ServerSocket(port);

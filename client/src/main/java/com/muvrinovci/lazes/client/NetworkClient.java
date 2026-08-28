@@ -19,9 +19,9 @@ import javafx.application.Platform;
 /**
  * Veza klijenta sa serverom.
  *
- * <p>Citanje tece u zasebnoj niti, ali se svaka primljena poruka prosledjuje
- * kroz {@link Platform#runLater} - tako se stanje interfejsa menja iskljucivo
- * iz JavaFX niti.</p>
+ * Citanje tece u zasebnoj niti, ali se svaka primljena poruka prosledjuje
+ * kroz runLater, tako se stanje interfejsa menja iskljucivo
+ * iz JavaFX niti.
  */
 public class NetworkClient {
 

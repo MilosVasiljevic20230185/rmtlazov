@@ -6,7 +6,7 @@ public enum GamePhase {
     /** Ceka se akcija igraca na potezu: bacanje karata ili vucenje. */
     TURN,
 
-    /** Potez je odigran; ostali igraci imaju kratak prozor da prozovu laz. */
+    /** Potez je odigran, ostali igraci imaju kratak prozor da prozovu laz. */
     CALL_WINDOW,
 
     /** Partija je zavrsena, pobednik je poznat. */

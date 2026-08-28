@@ -8,9 +8,9 @@ import com.muvrinovci.lazes.shared.protocol.MessageType;
 /**
  * Klijent -> Server: odigravanje karata sa deklarisanom vrednoscu.
  *
- * <p>Broj odigranih karata izvodi se iz duzine liste {@code cardIds}.
- * Vrednost {@code declaredValue} ne mora odgovarati stvarnom sadrzaju karata -
- * to je izjava cija se istinitost proverava tek prilikom prozivanja.</p>
+ * Broj odigranih karata izvodi se iz duzine liste  cardIds.
+ * Vrednost declaredValue ne mora odgovarati stvarnom sadrzaju karata,
+ * to je izjava cija se istinitost proverava tek prilikom prozivanja.
  */
 public class PlayCardsMessage extends Message {
 

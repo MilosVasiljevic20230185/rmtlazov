@@ -20,9 +20,9 @@ import com.muvrinovci.lazes.shared.protocol.dto.JoinRoomMessage;
 /**
  * Jedna nit po konekciji: cita poruke sa soketa i prosledjuje ih sobi igraca.
  *
- * <p>Poruke {@code create_room} i {@code join_room} obradjuje sam handler jer
+ * Poruke  create_room i join_room obradjuje sam handler jer
  * igrac tada jos nije ni u jednoj sobi; sve ostalo se prosledjuje sobi, koja ih
- * izvrsava u svojoj niti.</p>
+ * izvrsava u svojoj niti.
  */
 public class ClientHandler implements Runnable {
 

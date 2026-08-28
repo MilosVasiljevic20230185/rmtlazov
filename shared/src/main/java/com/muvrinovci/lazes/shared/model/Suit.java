@@ -27,7 +27,7 @@ public enum Suit {
         return code;
     }
 
-    /** Unicode simbol boje - klijent ga crta na karti umesto slike. */
+    /** Unicode simbol boje,, klijent ga crta na karti umesto slike. */
     public char symbol() {
         return symbol;
     }
