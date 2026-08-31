@@ -1,6 +1,5 @@
 package com.muvrinovci.lazes.shared;
 
-
 public final class GameRules {
 
     public static final int DEFAULT_PORT = 5555;
