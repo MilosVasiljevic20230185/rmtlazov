@@ -28,7 +28,7 @@ import com.muvrinovci.lazes.shared.protocol.ErrorCode;
  * 
  *   Igrac na potezu baca karte (playCards) ili vuce kartu (drawCard).
  *   Nakon bacanja partija ulazi u CALL_WINDOW.
- *   Ako neko prozove (callLiar) - karte se otkrivaju, gubitnik kupi centar
+ *   Ako neko prozove (callLiar), karte se otkrivaju, gubitnik kupi centar
  *       i runda se zavrsava (vrednost runde se resetuje).
  *   Ako niko ne prozove (closeCallWindow) red ide dalje, a vrednost
  *       runde ostaje ista.
