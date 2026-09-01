@@ -2,13 +2,17 @@ package com.muvrinovci.lazes.client.controller;
 
 import java.io.IOException;
 
+import com.muvrinovci.lazes.client.DeviceId;
 import com.muvrinovci.lazes.client.ViewNavigator;
 import com.muvrinovci.lazes.shared.GameRules;
 import com.muvrinovci.lazes.shared.protocol.Message;
 import com.muvrinovci.lazes.shared.protocol.MessageType;
 import com.muvrinovci.lazes.shared.protocol.dto.CreateRoomMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.ErrorMessage;
+import com.muvrinovci.lazes.shared.protocol.dto.GameSnapshotMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.JoinRoomMessage;
+import com.muvrinovci.lazes.shared.protocol.dto.LobbyStateMessage;
+import com.muvrinovci.lazes.shared.protocol.dto.ReconnectMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.RoomJoinedMessage;
 
 import javafx.fxml.FXML;
@@ -25,9 +29,13 @@ public class MainMenuController implements ScreenController {
     @FXML private TextField codeField;
     @FXML private Button createButton;
     @FXML private Button joinButton;
+    @FXML private Button resumeButton;
     @FXML private Label statusLabel;
 
     private ViewNavigator navigator;
+
+    /** true dok cekamo odgovor na pokusaj povratka u prekinutu partiju. */
+    private boolean resuming;
 
     @Override
     public void init(ViewNavigator navigator) {
@@ -50,7 +58,7 @@ public class MainMenuController implements ScreenController {
         if (!connect()) {
             return;
         }
-        navigator.getNetwork().send(new CreateRoomMessage(nameField.getText().trim()));
+        navigator.getNetwork().send(new CreateRoomMessage(nameField.getText().trim(), DeviceId.get()));
         setBusy(true);
     }
 
@@ -64,8 +72,24 @@ public class MainMenuController implements ScreenController {
         if (!connect()) {
             return;
         }
-        navigator.getNetwork().send(new JoinRoomMessage(code, nameField.getText().trim()));
+        navigator.getNetwork().send(new JoinRoomMessage(code, nameField.getText().trim(), DeviceId.get()));
         setBusy(true);
+    }
+
+    /**
+     * Povratak na mesto koje se cuva posle prekida veze.
+     *
+     * Kod sobe se ne unosi - server prepoznaje uredjaj po otisku i sam zna gde
+     * je igrac bio. Povratak radi iskljucivo sa uredjaja sa koga je i ispao.
+     */
+    @FXML
+    private void handleResume() {
+        if (!connect()) {
+            return;
+        }
+        resuming = true;
+        setBusy(true);
+        navigator.getNetwork().send(new ReconnectMessage(DeviceId.get(), nameField.getText().trim()));
     }
 
     /** Povezuje se na server; vraca {@code false} ako unos nije ispravan ili server ne odgovara. */
@@ -111,9 +135,27 @@ public class MainMenuController implements ScreenController {
                 navigator.getSession().setPlayerId(joined.getPlayerId());
                 navigator.getSession().setRoomCode(joined.getRoomCode());
                 navigator.getSession().setHost(joined.isHost());
-                navigator.showLobby();
+
+                // Pri povratku tek naredna poruka kaze da li se ide na sto ili u lobby.
+                if (!resuming) {
+                    navigator.showLobby();
+                }
+            }
+            case MessageType.GAME_SNAPSHOT -> {
+                navigator.getSession().setPendingSnapshot((GameSnapshotMessage) message);
+                resuming = false;
+                navigator.showTable();
+            }
+            case MessageType.LOBBY_STATE -> {
+                // Partija se zavrsila dok nas nije bilo; vracamo se u cekaonicu.
+                if (resuming) {
+                    resuming = false;
+                    navigator.getSession().setPendingLobbyState((LobbyStateMessage) message);
+                    navigator.showLobby();
+                }
             }
             case MessageType.ERROR -> {
+                resuming = false;
                 setBusy(false);
                 navigator.getNetwork().disconnect();
                 showStatus(((ErrorMessage) message).getMessage());
@@ -127,6 +169,7 @@ public class MainMenuController implements ScreenController {
     private void setBusy(boolean busy) {
         createButton.setDisable(busy);
         joinButton.setDisable(busy);
+        resumeButton.setDisable(busy);
     }
 
     private void showStatus(String text) {

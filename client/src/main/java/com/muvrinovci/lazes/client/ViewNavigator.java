@@ -81,7 +81,9 @@ public class ViewNavigator {
     private void onConnectionLost() {
         network.disconnect();
         session.clearRoom();
-        showError("Veza sa serverom je prekinuta.");
+        showError("Veza sa serverom je prekinuta.\n\n"
+                + "Mesto za stolom ti se čuva još 2 minuta — vrati se dugmetom "
+                + "„Nastavi partiju\" sa ovog istog uređaja.");
         showMainMenu();
     }
 

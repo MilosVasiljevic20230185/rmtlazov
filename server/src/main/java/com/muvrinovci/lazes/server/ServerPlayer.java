@@ -4,16 +4,29 @@ import java.util.UUID;
 
 import com.muvrinovci.lazes.shared.protocol.Message;
 
-/** Igrac na serverskoj strani: identitet, stanje u lobby-ju i veza ka njegovoj konekciji. */
+/**
+ * Igrac na serverskoj strani: identitet, stanje u lobby-ju i veza ka njegovoj konekciji.
+ *
+ * Mesto sme da nadzivi svoju konekciju: dok traje grace period posle prekida
+ * veze handler je null, mesto ostaje za stolom, a poruke koje bi mu
+ * isle se preskacu. Celo stanje mu se vrati snapshot-om kada se ponovo javi.
+ */
 public class ServerPlayer {
 
     private final String id = UUID.randomUUID().toString();
-    private final ClientHandler handler;
+
+    private ClientHandler handler;
 
     private String name;
     private String avatar;
     private boolean ready;
     private Room room;
+
+    /** Otisak uredjaja sa koga je igrac usao; jedini nacin da se prepozna pri povratku. */
+    private String deviceId;
+
+    /** Trenutak prekida veze; sluzi da se razluce mesta koja cekaju povratak. */
+    private long disconnectedAt;
 
     public ServerPlayer(ClientHandler handler, String name) {
         this.handler = handler;
@@ -56,8 +69,41 @@ public class ServerPlayer {
         this.room = room;
     }
 
+    public String getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
+    }
+
+    public long getDisconnectedAt() {
+        return disconnectedAt;
+    }
+
+    public void setDisconnectedAt(long disconnectedAt) {
+        this.disconnectedAt = disconnectedAt;
+    }
+
+    public ClientHandler getHandler() {
+        return handler;
+    }
+
+    public void setHandler(ClientHandler handler) {
+        this.handler = handler;
+    }
+
+    /** false dok mesto ceka povratak igraca i nema aktivnu konekciju. */
+    public boolean isConnected() {
+        return handler != null;
+    }
+
+    /** Salje poruku igracu; dok mesto nema konekciju poruka se tiho preskace. */
     public void send(Message message) {
-        handler.send(message);
+        ClientHandler target = handler;
+        if (target != null) {
+            target.send(message);
+        }
     }
 
     @Override

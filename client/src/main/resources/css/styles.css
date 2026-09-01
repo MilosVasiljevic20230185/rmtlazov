@@ -272,6 +272,16 @@
     -fx-font-weight: bold;
 }
 
+/* Mesto igraca kome je pukla veza, dok mu se cuva mesto za stolom. */
+.seat-offline {
+    -fx-opacity: 0.45;
+}
+
+.seat-offline-note {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-danger;
+}
+
 .seat-cards {
     -fx-font-size: 13px;
     -fx-text-fill: -color-text-dim;

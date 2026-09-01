@@ -8,6 +8,9 @@ public class CreateRoomMessage extends Message {
 
     private String playerName;
 
+    /** Otisak uredjaja; sluzi da server prepozna igraca ako mu pukne veza. */
+    private String deviceId;
+
     public CreateRoomMessage() {
         super(MessageType.CREATE_ROOM);
     }
@@ -17,7 +20,16 @@ public class CreateRoomMessage extends Message {
         this.playerName = playerName;
     }
 
+    public CreateRoomMessage(String playerName, String deviceId) {
+        this(playerName);
+        this.deviceId = deviceId;
+    }
+
     public String getPlayerName() {
         return playerName;
+    }
+
+    public String getDeviceId() {
+        return deviceId;
     }
 }

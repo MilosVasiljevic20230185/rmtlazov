@@ -16,6 +16,7 @@ import com.muvrinovci.lazes.shared.protocol.ProtocolException;
 import com.muvrinovci.lazes.shared.protocol.dto.CreateRoomMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.ErrorMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.JoinRoomMessage;
+import com.muvrinovci.lazes.shared.protocol.dto.ReconnectMessage;
 
 /**
  * Jedna nit po konekciji: cita poruke sa soketa i prosledjuje ih sobi igraca.
@@ -75,22 +76,37 @@ public class ClientHandler implements Runnable {
         switch (message.getType()) {
             case MessageType.CREATE_ROOM -> onCreateRoom((CreateRoomMessage) message);
             case MessageType.JOIN_ROOM -> onJoinRoom((JoinRoomMessage) message);
+            case MessageType.RECONNECT -> onReconnect((ReconnectMessage) message);
             default -> forwardToRoom(message);
         }
     }
 
     private void onCreateRoom(CreateRoomMessage message) {
-        if (!ensurePlayer(message.getPlayerName())) {
+        if (!ensurePlayer(message.getPlayerName(), message.getDeviceId())) {
             return;
         }
         roomManager.createRoom(player);
     }
 
     private void onJoinRoom(JoinRoomMessage message) {
-        if (!ensurePlayer(message.getPlayerName())) {
+        if (!ensurePlayer(message.getPlayerName(), message.getDeviceId())) {
             return;
         }
         roomManager.joinRoom(message.getRoomCode(), player);
+    }
+
+    /** Povratak na mesto koje se cuva; igrac se pravi tek ako povratak uspe. */
+    private void onReconnect(ReconnectMessage message) {
+        if (player != null && player.getRoom() != null) {
+            send(new ErrorMessage(ErrorCode.INVALID_ACTION, "Vec ste u sobi."));
+            return;
+        }
+        roomManager.reconnect(message.getDeviceId(), message.getPlayerName(), this);
+    }
+
+    /** Zakacuje ovu konekciju na mesto koje je cekalo povratak igraca. */
+    void attachTo(ServerPlayer seat) {
+        this.player = seat;
     }
 
     private void forwardToRoom(Message message) {
@@ -104,7 +120,7 @@ public class ClientHandler implements Runnable {
     }
 
     /** Kreira igraca pri prvoj akciji ili odbija neispravno ime. */
-    private boolean ensurePlayer(String name) {
+    private boolean ensurePlayer(String name, String deviceId) {
         String trimmed = name == null ? "" : name.trim();
         if (trimmed.isEmpty()) {
             send(new ErrorMessage(ErrorCode.INVALID_NAME, "Unesite ime igraca."));
@@ -123,6 +139,7 @@ public class ClientHandler implements Runnable {
             }
             player.setName(trimmed);
         }
+        player.setDeviceId(deviceId == null || deviceId.isBlank() ? null : deviceId.trim());
         return true;
     }
 
@@ -132,9 +149,12 @@ public class ClientHandler implements Runnable {
     }
 
     private void disconnect(String reason) {
-        if (player != null && player.getRoom() != null) {
-            Room room = player.getRoom();
-            room.submit(() -> room.leave(player, reason));
+        // Ako je mesto u medjuvremenu preuzela nova konekcija, ova nit vise nema
+        // sta da rusi - inace bi gasenje starog soketa izbacilo vraceni igraca.
+        ServerPlayer seat = player;
+        if (seat != null && seat.getRoom() != null && seat.getHandler() == this) {
+            Room room = seat.getRoom();
+            room.submit(() -> room.onConnectionLost(seat, reason));
         }
         try {
             socket.close();

@@ -14,6 +14,7 @@ import com.muvrinovci.lazes.shared.protocol.dto.CreateRoomMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.DrawCardMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.ErrorMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.GameOverMessage;
+import com.muvrinovci.lazes.shared.protocol.dto.GameSnapshotMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.GameStartMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.HandUpdateMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.JoinRoomMessage;
@@ -23,6 +24,8 @@ import com.muvrinovci.lazes.shared.protocol.dto.PlayAnnouncedMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.PlayCardsMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.PlayerDisconnectedMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.PlayerReadyMessage;
+import com.muvrinovci.lazes.shared.protocol.dto.PlayerReconnectedMessage;
+import com.muvrinovci.lazes.shared.protocol.dto.ReconnectMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.RoomJoinedMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.SetAvatarMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.StartGameMessage;
@@ -50,6 +53,7 @@ public final class JsonCodec {
             Map.entry(MessageType.CALL_LIAR, CallLiarMessage.class),
             Map.entry(MessageType.DRAW_CARD, DrawCardMessage.class),
             Map.entry(MessageType.LEAVE_ROOM, LeaveRoomMessage.class),
+            Map.entry(MessageType.RECONNECT, ReconnectMessage.class),
 
             // Server -> Klijent
             Map.entry(MessageType.ROOM_JOINED, RoomJoinedMessage.class),
@@ -61,6 +65,8 @@ public final class JsonCodec {
             Map.entry(MessageType.CALL_RESULT, CallResultMessage.class),
             Map.entry(MessageType.CARD_DRAWN, CardDrawnMessage.class),
             Map.entry(MessageType.PLAYER_DISCONNECTED, PlayerDisconnectedMessage.class),
+            Map.entry(MessageType.PLAYER_RECONNECTED, PlayerReconnectedMessage.class),
+            Map.entry(MessageType.GAME_SNAPSHOT, GameSnapshotMessage.class),
             Map.entry(MessageType.GAME_OVER, GameOverMessage.class),
             Map.entry(MessageType.ERROR, ErrorMessage.class));
 

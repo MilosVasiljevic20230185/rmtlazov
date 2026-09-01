@@ -2,8 +2,10 @@ package com.muvrinovci.lazes.client.controller;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.muvrinovci.lazes.client.ViewNavigator;
 import com.muvrinovci.lazes.client.view.Avatars;
@@ -19,10 +21,12 @@ import com.muvrinovci.lazes.shared.protocol.dto.CardDrawnMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.DrawCardMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.ErrorMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.GameOverMessage;
+import com.muvrinovci.lazes.shared.protocol.dto.GameSnapshotMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.HandUpdateMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.PlayAnnouncedMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.PlayCardsMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.PlayerDisconnectedMessage;
+import com.muvrinovci.lazes.shared.protocol.dto.PlayerReconnectedMessage;
 import com.muvrinovci.lazes.shared.protocol.dto.TurnUpdateMessage;
 
 import javafx.animation.Animation;
@@ -89,6 +93,12 @@ public class TableController implements ScreenController {
     /** Imena igraca po identifikatoru, popunjena iz  turn_update poruka. */
     private final Map<String, String> namesById = new HashMap<>();
 
+    /** Poslednje poznato stanje mesta za stolom, da se mogu ponovo iscrtati. */
+    private List<TurnUpdateMessage.PlayerInfo> seats = List.of();
+
+    /** Igraci kojima je pukla veza, ali im se mesto jos uvek cuva. */
+    private final Set<String> offlineIds = new HashSet<>();
+
     private String currentPlayerId;
     private String announcerId;
     private int tableValue;
@@ -109,8 +119,46 @@ public class TableController implements ScreenController {
 
         roomLabel.setText("Soba " + navigator.getSession().getRoomCode());
         setUpValueCombo();
-        showStartCountdown();
-        addLog("Partija počinje.", true);
+
+        GameSnapshotMessage snapshot = navigator.getSession().takePendingSnapshot();
+        if (snapshot != null) {
+            // Povratak u partiju u toku: nema odbrojavanja, sto se crta odmah.
+            addLog("Vratio si se u partiju.", true);
+            applySnapshot(snapshot);
+        } else {
+            showStartCountdown();
+            addLog("Partija počinje.", true);
+        }
+    }
+
+    /** Iscrtava zatecenu partiju iz jedne poruke, umesto niza propustenih poruka. */
+    private void applySnapshot(GameSnapshotMessage snapshot) {
+        currentPlayerId = snapshot.getCurrentPlayerId();
+        tableValue = snapshot.getTableValue();
+        drawPileCount = snapshot.getDrawPileCount();
+        callWindowActive = snapshot.isCallWindow();
+        announcerId = snapshot.isCallWindow() ? snapshot.getAnnouncerId() : null;
+
+        renderHandCards(snapshot.getHand());
+        renderSeats(snapshot.getPlayers());
+        renderCenter(snapshot.getCenterCount());
+        renderDrawPile(snapshot.getDrawPileCount());
+        renderTableValue();
+
+        double remainingSeconds = snapshot.getRemainingMs() / 1000.0;
+        if (snapshot.isCallWindow()) {
+            addLog(snapshot.getAnnouncerName() + " igra " + snapshot.getDeclaredCount()
+                    + " × " + Rank.fromValue(snapshot.getDeclaredValue()).label() + ". Prozvati?", true);
+            startTimer(remainingSeconds, navigator.getSession().isMe(announcerId)
+                    ? "Čeka se da li će te prozvati"
+                    : "Možeš prozvati laž!");
+        } else {
+            startTimer(remainingSeconds, navigator.getSession().isMe(currentPlayerId)
+                    ? "Tvoj potez"
+                    : "Na potezu: " + nameOf(currentPlayerId));
+        }
+
+        updateControls();
     }
 
     private void setUpValueCombo() {
@@ -190,6 +238,8 @@ public class TableController implements ScreenController {
             case MessageType.CALL_RESULT -> onCallResult((CallResultMessage) message);
             case MessageType.CARD_DRAWN -> onCardDrawn((CardDrawnMessage) message);
             case MessageType.PLAYER_DISCONNECTED -> onPlayerLeft((PlayerDisconnectedMessage) message);
+            case MessageType.PLAYER_RECONNECTED -> onPlayerReconnected((PlayerReconnectedMessage) message);
+            case MessageType.GAME_SNAPSHOT -> applySnapshot((GameSnapshotMessage) message);
             case MessageType.GAME_OVER -> onGameOver((GameOverMessage) message);
             case MessageType.ERROR -> onError((ErrorMessage) message);
             default -> {
@@ -199,11 +249,15 @@ public class TableController implements ScreenController {
     }
 
     private void renderHand(HandUpdateMessage message) {
+        renderHandCards(message.getCards());
+    }
+
+    private void renderHandCards(List<String> cardIds) {
         handCards.clear();
         handPane.getChildren().clear();
 
         // Ruka se prikazuje sortirana, pa iste vrednosti stoje jedna uz drugu.
-        List<Card> cards = message.getCards().stream()
+        List<Card> cards = cardIds.stream()
                 .map(Card::fromId)
                 .sorted(Card.BY_VALUE)
                 .toList();
@@ -231,7 +285,7 @@ public class TableController implements ScreenController {
         callWindowActive = false;
         announcerId = null;
 
-        renderOpponents(message.getPlayers());
+        renderSeats(message.getPlayers());
         renderCenter(message.getCenterCount());
         renderDrawPile(message.getDrawPileCount());
         renderTableValue();
@@ -281,7 +335,23 @@ public class TableController implements ScreenController {
     }
 
     private void onPlayerLeft(PlayerDisconnectedMessage message) {
+        if (message.isTemporary()) {
+            offlineIds.add(message.getPlayerId());
+            redrawSeats();
+            addLog(message.getPlayerName() + " je izgubio vezu — mesto mu se čuva "
+                    + message.getGraceSeconds() / 60 + " min, server igra umesto njega.", true);
+            return;
+        }
+
+        offlineIds.remove(message.getPlayerId());
+        redrawSeats();
         addLog(message.getPlayerName() + " je napustio partiju.", true);
+    }
+
+    private void onPlayerReconnected(PlayerReconnectedMessage message) {
+        offlineIds.remove(message.getPlayerId());
+        redrawSeats();
+        addLog(message.getPlayerName() + " se vratio u partiju.", true);
     }
 
     private void onError(ErrorMessage message) {
@@ -327,10 +397,19 @@ public class TableController implements ScreenController {
 
     // Iscrtavanje stola
 
-    private void renderOpponents(List<TurnUpdateMessage.PlayerInfo> players) {
+    private void renderSeats(List<TurnUpdateMessage.PlayerInfo> players) {
+        seats = players;
+        offlineIds.clear();
+        players.stream()
+                .filter(player -> !player.isConnected())
+                .forEach(player -> offlineIds.add(player.getId()));
+        redrawSeats();
+    }
+
+    private void redrawSeats() {
         opponentsBox.getChildren().clear();
 
-        for (TurnUpdateMessage.PlayerInfo player : players) {
+        for (TurnUpdateMessage.PlayerInfo player : seats) {
             namesById.put(player.getId(), player.getName());
 
             if (navigator.getSession().isMe(player.getId())) {
@@ -355,6 +434,13 @@ public class TableController implements ScreenController {
             seat.getStyleClass().add("seat");
             if (player.getId().equals(currentPlayerId)) {
                 seat.getStyleClass().add("seat-active");
+            }
+
+            if (offlineIds.contains(player.getId())) {
+                seat.getStyleClass().add("seat-offline");
+                Label note = new Label("veza pukla — mesto se čuva");
+                note.getStyleClass().add("seat-offline-note");
+                seat.getChildren().add(note);
             }
 
             opponentsBox.getChildren().add(seat);
