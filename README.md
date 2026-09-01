@@ -164,7 +164,9 @@ Nekoliko stvari dokumentacija nije precizirala ili je bila protivrečna, pa su r
 | Istek poteza | Po isteku 30 sekundi server automatski vuče kartu umesto igrača; ako je špil prazan, baca prvu kartu iz njegove ruke. |
 | Grafika | Karte i sto se crtaju JavaFX oblicima i Unicode simbolima (♠♥♦♣), pa projekat ne zavisi ni od jednog slikovnog fajla. |
 
-Protokol iz Dokumenta 3 dopunjen je porukama `start_game`, `room_joined`, `set_avatar`, `leave_room`, `card_drawn` i `error`, koje su bile neophodne za lobby i prikaz grešaka.
+| Prekid veze | Mesto se čuva **2 minuta** i server igra umesto igrača; povratak je moguć samo sa **istog uređaja**, koji server prepoznaje po otisku (bez accounta i bez profila). Detalji u [docs/predlog-reconnect.md](docs/predlog-reconnect.md). |
+
+Protokol iz Dokumenta 3 dopunjen je porukama `start_game`, `room_joined`, `set_avatar`, `leave_room`, `card_drawn` i `error`, koje su bile neophodne za lobby i prikaz grešaka, i porukama `reconnect`, `game_snapshot` i `player_reconnected` za povratak u prekinutu partiju.
 
 ---
 
@@ -174,7 +176,7 @@ Protokol iz Dokumenta 3 dopunjen je porukama `start_game`, `room_joined`, `set_a
 mvn test
 ```
 
-Pokriveno je **43 testa**: model karata i protokol, sva pravila igre kroz sve faze partije, i **5 integracionih testova** koji igraju partiju kroz pravi TCP soket.
+Pokriveno je **51 test**: model karata i protokol, sva pravila igre kroz sve faze partije, **5 integracionih testova** koji igraju partiju kroz pravi TCP soket, i **8 testova ponovnog povezivanja** (čuvanje mesta, auto-igra, povratak istog uređaja, gašenje napuštene sobe).
 
 ---
 
@@ -189,4 +191,5 @@ Projektna dokumentacija nalazi se u folderu `docs/`:
 Uz to, za članove tima:
 
 - [docs/ARHITEKTURA.md](docs/ARHITEKTURA.md) — detaljno objašnjenje koda, sa težištem na mrežnom sloju, i dijagrami saradnje klasa
+- [docs/predlog-reconnect.md](docs/predlog-reconnect.md) — čuvanje mesta posle prekida veze i povratak u partiju
 - [docs/objasnjenja.md](docs/objasnjenja.md) — pitanja i odgovori za pripremu odbrane (record, TCP soket, `JsonCodec`, `actionToken`…)

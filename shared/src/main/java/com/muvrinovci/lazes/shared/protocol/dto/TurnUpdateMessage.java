@@ -16,14 +16,22 @@ public class TurnUpdateMessage extends Message {
         private String avatar;
         private int cardCount;
 
+        /** false dok se mesto cuva zbog prekinute veze. */
+        private boolean connected = true;
+
         public PlayerInfo() {
         }
 
         public PlayerInfo(String id, String name, String avatar, int cardCount) {
+            this(id, name, avatar, cardCount, true);
+        }
+
+        public PlayerInfo(String id, String name, String avatar, int cardCount, boolean connected) {
             this.id = id;
             this.name = name;
             this.avatar = avatar;
             this.cardCount = cardCount;
+            this.connected = connected;
         }
 
         public String getId() {
@@ -40,6 +48,10 @@ public class TurnUpdateMessage extends Message {
 
         public int getCardCount() {
             return cardCount;
+        }
+
+        public boolean isConnected() {
+            return connected;
         }
     }
 

@@ -50,6 +50,12 @@ public class LobbyController implements ScreenController {
         startButton.setManaged(navigator.getSession().isHost());
         statusLabel.setText("Potrebna su najmanje " + GameRules.MIN_PLAYERS
                 + " igrača, a najviše " + GameRules.MAX_PLAYERS + ".");
+
+        // Pri povratku u sobu stanje je vec stiglo dok je jos bio otvoren glavni meni.
+        LobbyStateMessage pending = navigator.getSession().takePendingLobbyState();
+        if (pending != null) {
+            renderLobby(pending);
+        }
     }
 
     // Akcije korisnika

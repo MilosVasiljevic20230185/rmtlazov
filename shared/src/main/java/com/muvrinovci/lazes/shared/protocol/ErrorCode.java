@@ -21,6 +21,12 @@ public final class ErrorCode {
     public static final String INVALID_NAME = "INVALID_NAME";
     public static final String MALFORMED_MESSAGE = "MALFORMED_MESSAGE";
 
+    /** Za ovaj uredjaj ne postoji sacuvano mesto, ili je grace period istekao. */
+    public static final String RECONNECT_FAILED = "RECONNECT_FAILED";
+
+    /** Mesto tog uredjaja jos uvek ima zivu konekciju, pa se ne preuzima. */
+    public static final String SESSION_ACTIVE = "SESSION_ACTIVE";
+
     private ErrorCode() {
     }
 }

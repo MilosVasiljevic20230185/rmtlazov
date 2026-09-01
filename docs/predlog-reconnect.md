@@ -1,160 +1,125 @@
-# Predlog: ponovno povezivanje igrača (reconnect)
+# Ponovno povezivanje igrača (reconnect)
 
-Interni predlog za tim. Opisuje kako bi igrač mogao da se vrati u istu partiju posle prekida veze — bilo relaunch-om na istoj mašini, bilo prelaskom na drugi uređaj — **bez uvođenja accounta**.
+Opis rešenja za povratak u partiju posle prekida veze — **bez accounta i bez profila**, svi igrači su gosti.
 
-Status: **predlog, nije implementirano.** Cilj dokumenta je da tim izabere pristup pre nego što se piše kod.
-
----
-
-## Šta se traži
-
-1. **Grace period + auto-igra.** Kad se klijent odspoji (zatvori prozor, pukne net), mesto mu se čuva ~2 minuta i server automatski igra umesto njega. Ako se vrati u tom roku, nastavlja gde je stao. (Slično auto-odgovoru u Slagalici.)
-2. **Povratak istog klijenta** u istu sobu posle relaunch-a.
-3. **Cross-device** — isti igrač izađe sa računara i uđe sa telefona u istu partiju. Sve to **bez accounta**.
+Status: **implementirano.**
 
 ---
 
-## Ključni uvid: dva nezavisna dela
+## Šta radi
 
-Svako rešenje se sastoji iz dve odvojene stvari:
+1. **Grace period + auto-igra.** Kad se klijent odspoji (zatvori prozor, pukne net), mesto mu se čuva 2 minuta i server automatski igra umesto njega.
+2. **Povratak istog uređaja** u istu partiju, jednim dugmetom, bez unosa ičega.
+3. **Napuštena soba se gasi** ako u njoj minut nema nijednog povezanog igrača.
 
-1. **Držanje mesta (seat-hold)** — server ne izbacuje igrača na disconnect, nego mu čuva mesto i auto-igra. **Isto je za sve varijante.**
-2. **Identitet pri povratku** — kako server prepozna „ovo je taj isti igrač". Tu se rešenja granaju i tu se odlučuje da li radi cross-device.
-
-> **Problem cross-device = problem relaunch-a + token koji se može preneti na drugi uređaj.** Ako identitet napravimo prenosivim, cross-device dolazi besplatno.
-
----
-
-## Deo zajednički za sve: držanje mesta
-
-Ovo se radi bez obzira na izbor identiteta. **Kod već auto-igra** na isteku poteza (`onTurnTimeout` u [Room.java](../server/src/main/java/com/muvrinovci/lazes/server/Room.java): vuče kartu ili baca najnižu), pa je „automatski igra dok te nema" skoro gotovo.
-
-**Sada:** disconnect → `Room.leave` → `engine.removePlayer(id)` → mesto nestaje, karte izlaze iz igre.
-
-**Treba:** disconnect → mesto se označi `DISCONNECTED`, pokrene se 2-min tajmer (preko postojećeg `scheduler`-a), igrač ostaje u partiji i potezi mu se auto-rešavaju. Vrati se pre isteka → tajmer se otkaže, nova konekcija se zakači na isto `ServerPlayer` mesto, pošalje mu se puno stanje. Istekne 2 min → tek tada pravi `removePlayer`.
-
-### Izazovi (važe za sva rešenja)
-
-| Izazov | Zašto |
-|---|---|
-| `ServerPlayer.send()` zove `ClientHandler` — a mesto neko vreme nema aktivnu konekciju | Dozvoliti „mesto bez soketa"; poruke se tada samo ne šalju (ili baferuju) |
-| Soba se briše kad je `players` prazna | Ne brisati dok makar jedno mesto „visi" na tajmeru |
-| Povratak mora da vrati celo stanje (ruka, potez, centar, špil) | Nova poruka-snapshot, ili ponoviti postojeće `hand_update` + `turn_update` |
-| `engine.removePlayer` pomera indekse | Umesto uklanjanja: „preskoči `DISCONNECTED` mesto", pa ga vrati kad se igrač vrati |
-| Ista tajna se poveže dok stara konekcija još živi (dva uređaja) | Odlučiti: nova preuzima, stara ispada (baš to hoćemo za cross-device) |
+Cross-device povratak (izađeš sa računara, uđeš sa telefona) **nije podržan, i to namerno** — objašnjeno u poglavlju „Zašto nema cross-device".
 
 ---
 
-## Problem A — isti klijent se vrati (relaunch na istoj mašini)
+## Dva nezavisna dela
 
-Identitet mora da preživi gašenje aplikacije.
+Rešenje se sastoji iz dve odvojene stvari:
 
-### A1. Reconnect-token u lokalnom fajlu na klijentu
-Server pri ulasku izda tajni `reconnectToken` (npr. UUID) vezan za mesto. Klijent ga upiše u fajl (`~/.lazes/session`). Pri povratku šalje `{roomCode, reconnectToken}`; server uporedi i zakači.
-
-| Prednosti | Mane |
-|---|---|
-| Robusno — preživi crash i relaunch | Klijent mora da piše/čita fajl |
-| Token je pravi tajni ključ — niko ne otima mesto | Ako se fajl izgubi, nema povratka |
-| Radi i kad se IP promeni | Traži nove poruke + seat-hold |
-| Povratak automatski (korisnik ništa ne kuca) | Ne radi cross-device sam (fajl je na toj mašini) |
-
-### A2. Ime + kod sobe kao „meki identitet"
-Pri povratku klijent pošalje isto ime + kod sobe. Server nađe `DISCONNECTED` mesto sa tim imenom i zakači.
-
-| Prednosti | Mane |
-|---|---|
-| Nula skladištenja, trivijalno | **Nebezbedno** — ko zna kod + ime otme mesto |
-| Korisnik samo ponovo ukuca ime | Sudar imena (dva „Miloš") |
-| Radi cross-device besplatno | Zavisi od tačno istog imena |
-
-### A3. Kratak „resume kod" koji server izda
-Server pri ulasku da kratak kod (npr. 4 znaka). Klijent ga kešira (auto povratak) i pokaže korisniku (može da ga ukuca drugde).
-
-| Prednosti | Mane |
-|---|---|
-| Bezbednije od imena | Korisnik čuva/kuca kod ako nije keširan |
-| Može i auto (keš) i ručno (cross-device) — zlatna sredina | I dalje treba seat-hold |
-
-### A4. Prepoznavanje po IP adresi — *odbačeno*
-NAT i mobilne mreže menjaju IP, više igrača iza istog rutera deli IP, telefon je ionako drugi IP. Ruši samu ideju.
+1. **Držanje mesta (seat-hold)** — server ne izbacuje igrača na disconnect, nego mu čuva mesto i auto-igra.
+2. **Identitet pri povratku** — kako server prepozna „ovo je taj isti igrač". Ovde je izabran otisak uređaja.
 
 ---
 
-## Problem B — drugi uređaj, bez accounta (PC → telefon)
+## Držanje mesta
 
-Razlika je samo jedna: token mora da **pređe na drugi uređaj**. Bez accounta, korisnik **sam nosi** nešto: kod koji ukuca, QR koji skenira, ili tajnu koju pamti.
+**Ranije:** disconnect → `Room.leave` → `engine.removePlayer(id)` → mesto nestaje, karte izlaze iz igre.
 
-### B1. Ručni resume kod (ukucaš na telefonu)
-Server izda čitljiv kod (npr. `roomCode` + lični 4-znakovni PIN). Na telefonu uneseš oba.
+**Sada:** disconnect → `Room.onConnectionLost` → ako je partija u toku, `holdSeat` označi mesto kao odspojeno, pokrene tajmer od 2 minuta i pusti da server igra umesto igrača. Tek kad tajmer istekne, `expireSeat` pozove istu onu staru `leave` logiku.
 
-| Prednosti | Mane |
+Pravila igre nisu dirana. `GameEngine` je ostao nepromenjen jer je auto-igra već postojala — `onTurnTimeout` vuče kartu, a ako je špil prazan baca najnižu. Jedina izmena je da tajmer poteza za odspojeno mesto traje `DISCONNECTED_TURN_SECONDS` (3s) umesto punih 60s, da partija ne bi stajala.
+
+Kako je to rešeno u kodu:
+
+| Izazov | Rešenje |
 |---|---|
-| Bez accounta, stvarno cross-device, prosto | Korisnik mora da ga vidi i prekuca |
-| Korisnik ga kontroliše | Ako ga nije zapisao pre pada PC-ja — nema povratka (ublažiti: kod stalno vidljiv u UI) |
-
-### B2. Korisnik bira PIN/tajnu pri ulasku
-Pri ulasku korisnik izabere kratku tajnu. Za povratak sa bilo kog uređaja: `roomCode + ime + tajna`.
-
-| Prednosti | Mane |
-|---|---|
-| Bez accounta, bez skladištenja, pun cross-device | Korisnik mora da zapamti tajnu |
-| Uvek je reprodukuje (sam ju je izabrao) | Malo trenja pri ulasku |
-| Tajna sprečava otimanje (za razliku od A2) | Slabo ako izabere trivijalnu tajnu (za školski projekat OK) |
-
-### B3. QR kod / handoff
-PC prikaže QR sa `{roomCode, reconnectToken}`; telefon skenira i uđe kao isti igrač.
-
-| Prednosti | Mane |
-|---|---|
-| Elegantno, bezbedno, bez kucanja | Treba generisanje QR-a i put za skeniranje |
-| Odlična UX | Kamera na telefonu; **QR se mora pokazati pre** nego što PC crkne |
-
-### B4. Centralni registar po „prijavljenom identitetu"
-Server drži mesta po korisničkom identifikatoru (ime + tajna); svaki uređaj koji ga pošalje se zakači. Uopštenje B1/B2 — vidi iskrenu granicu dole.
+| `ServerPlayer.send()` je zvao `ClientHandler`, a mesto neko vreme nema konekciju | `handler` više nije `final`; kad je `null`, `send()` tiho preskače poruku |
+| Povratak mora da vrati celo stanje | Nova poruka `game_snapshot` sa rukom, stolom, fazom i preostalim vremenom |
+| `engine.removePlayer` pomera indekse | Ne poziva se na disconnect nego tek na istek roka, pa problem ni ne nastaje |
+| Soba se brisala kad `players` ostane prazna | Odspojena mesta i dalje stoje u `players`, pa se soba ne briše dok makar jedno visi |
+| Stara nit bi zatvaranjem soketa srušila mesto koje je već preuzeto | `ClientHandler.disconnect` radi nešto samo ako je `player.getHandler() == this` |
+| Zakasneli tajmeri posle gašenja sobe | `Room.submit` i `Room.schedule` hvataju `RejectedExecutionException` |
 
 ---
 
-## Iskrena granica (za odbranu)
+## Identitet: otisak uređaja
 
-**Cross-device bez accounta u principu zahteva da korisnik nosi *nešto* između uređaja** — kod, QR ili zapamćenu tajnu. Ne postoji način da telefon bude prepoznat kao „isti igrač" kao PC osim ako pokaže isti prenosivi dokaz.
+Klijent pri pokretanju izračuna `deviceId` i pošalje ga uz `create_room` / `join_room`:
 
-Account je samo trajna, na serveru sačuvana verzija tog istog dokaza. „Ime + tajna koju pamtiš" (B2) *jeste* minimalni account — samo bez baze i registracije. To je sasvim u redu za projekat; bezbednost je tačno onolika kolika je tajna.
+```
+deviceId = sha256(MAC | hostname | user.name)   // prvih 32 heks znaka
+```
 
-Rešenja bez tajne (A2 — samo ime, ili keširan token A1 iskorišćen sa druge mašine) znače da ko zna kod sobe + ime može da uskoči na tuđe mesto. Za igru sa drugarima prihvatljivo; dobro je to eksplicitno navesti kao svesnu odluku.
+MAC je leksikografski najmanja adresa među nevirtualnim karticama — sortira se zato da uključivanje VPN-a ili dokovanje laptopa ne promeni otisak. Sirov MAC nikada ne napušta mašinu, šalje se samo heš. Ništa se ne upisuje na disk: otisak se računa iznova pri svakom pokretanju, pa nema ni profila ni sesije koja bi preživela izvan same mašine.
 
----
+Krhkost otiska praktično ne smeta jer je prozor kratak — u dva minuta se ni hostname ni mrežne kartice ne menjaju.
 
-## Preporuka: jedan mehanizam, dva ulaza
+`RoomManager` drži registar `deviceId → roomCode` od ulaska u sobu do trenutka kada mesto konačno nestane. Zbog toga klijent pri povratku ne šalje ni kod sobe — server sam zna gde je taj uređaj bio, pa je povratak jedno dugme „Nastavi partiju".
 
-Najčistije — **jedan reconnect-token** koji pokriva oba problema:
+Aktivno mesto se **nikada ne preuzima**: ako otisak odgovara mestu koje ima živu konekciju, povratak se odbija sa `SESSION_ACTIVE`.
 
-1. Server pri ulasku izda `reconnectToken` (tajni) **i** kratak čitljiv `resumeCode`.
-2. Klijent **automatski kešira** token u fajl → problem A radi transparentno (relaunch = tihi povratak).
-3. UI **stalno prikazuje `resumeCode`** (i opciono QR) → problem B: na telefonu uneseš `roomCode + resumeCode` i preuzmeš mesto.
-4. Nova konekcija sa važećim tokenom preuzme; stara (ako još živi) se prekine → „prelazak sa PC-ja na telefon" znači da telefon preuzme, a PC ispadne.
+### Razmatrane alternative
 
-Isti kod tako servira i „vrati me posle pada" i „nastavi na telefonu"; jedina razlika je da li token dolazi iz keša ili ga korisnik ukuca/skenira.
-
-### Minimalni skup izmena
-
-| Sloj | Izmena |
+| Varijanta | Zašto nije izabrana |
 |---|---|
-| `GameEngine` | `DISCONNECTED` stanje mesta umesto `removePlayer` (auto-igra već postoji) |
-| `Room` | seat-hold tajmer (2 min) preko postojećeg `scheduler`-a; ne brisati sobu dok mesto visi |
-| `ServerPlayer` | sme da postoji bez aktivnog `ClientHandler`-a |
-| Protokol | `reconnect {roomCode, token}` (klijent→server), `state_snapshot` (server→klijent), `resumeCode`/`token` u `room_joined` |
-| Klijent | keširanje tokena u fajl + polje „Nastavi partiju" |
-
-### Predlog faza
-
-1. **Faza 1 — samo problem A.** Seat-hold + auto reconnect keširanim tokenom. Najveća vrednost, najmanje UI-ja.
-2. **Faza 2 — problem B.** Prikaz `resumeCode`-a i ekran „Nastavi partiju" (unos `roomCode + resumeCode`).
-3. **Faza 3 (opciono) — QR handoff.** Kozmetika, ako ostane vremena.
+| Tajni token keširan u fajl na klijentu | Traži upis na disk, a to je oblik profila koji smo hteli da izbegnemo |
+| Ime + kod sobe | Nebezbedno — ko zna kod i ime, uskoči na tuđe mesto; uz to se imena sudaraju |
+| Kratak resume kod za prekucavanje | Ima smisla samo ako se podržava cross-device, a on je odbačen |
+| PIN koji korisnik bira pri ulasku | Trenje pri svakom ulasku, i nema tihog automatskog povratka |
+| Prepoznavanje po IP adresi | NAT i mobilne mreže menjaju IP, više igrača iza istog rutera deli IP |
 
 ---
 
-## Odnos prema postojećoj dokumentaciji
+## Napuštena soba
 
-- Trenutno ponašanje na disconnect opisano je u [ARHITEKTURA.md, poglavlje 9](ARHITEKTURA.md#9-šta-se-dešava-kad-neko-prekine-vezu) — ovaj predlog menja upravo taj lanac (`Room.leave` → `removePlayer`).
-- MoSCoW: reconnect je u dokumentaciji **Could Have**, pa je ovo proširenje van MVP-a; uvoditi tek kad je osnovna partija stabilna.
+Ako u sobi ostane nula povezanih igrača, partija se **zaledi**: tajmer poteza se otkaže, auto-igra staje, i kreće tajmer od `EMPTY_ROOM_SECONDS` (60s). Vrati li se neko u tom roku, tekuća faza dobija pun tajmer iznova i partija se nastavlja. Ako se niko ne vrati, partija se prekida i soba briše.
+
+Taj tajmer je kraći od grace perioda mesta (60s naspram 120s), pa kad svi ispadnu, soba umire pre nego što pojedinačna mesta isteknu. To je svesna odluka: bez zaleđivanja bi automatski potezi doigrali celu partiju dok je niko ne gleda.
+
+---
+
+## Protokol
+
+Dodato je troje poruka, a nekoliko postojećih je dobilo nova polja. Sva nova polja su aditivna i stari konstruktori su zadržani, pa se ništa u postojećem toku igre nije promenilo.
+
+**Nove poruke**
+
+- `reconnect` (klijent → server): `deviceId`, `playerName`
+- `game_snapshot` (server → klijent): celo stanje partije — faza, ruka, sto, špil, preostalo vreme, igrači, i podaci o potezu koji čeka prozivanje
+- `player_reconnected` (server → klijent): `playerId`, `playerName`
+
+**Dopunjene poruke**
+
+- `create_room`, `join_room` + `deviceId`
+- `player_disconnected` + `temporary`, `graceSeconds`
+- `turn_update` → `PlayerInfo` + `connected`
+
+**Novi kodovi grešaka**
+
+- `RECONNECT_FAILED` — nema sačuvanog mesta za taj uređaj, ili je rok istekao
+- `SESSION_ACTIVE` — mesto tog uređaja ima živu konekciju
+
+---
+
+## Zašto nema cross-device
+
+Bez accounta, korisnik bi morao **sam da prenese neki dokaz** sa jednog uređaja na drugi — kod koji prekuca, QR koji skenira ili tajnu koju pamti. Ne postoji način da server prepozna telefon kao „istog igrača" ako telefon ne pokaže isti prenosivi dokaz; account je samo trajna, na serveru sačuvana verzija tog istog dokaza.
+
+Odlučeno je da se ta mogućnost ne uvodi. Posledica je da je identitet vezan za mašinu i da ništa prenosivo ne postoji, pa nema ni čega da se otme.
+
+## Poznata ograničenja
+
+- Dva klijenta na istoj mašini dele otisak, pa povratak za taj slučaj nije podržan. Normalna igra time nije pogođena jer svaka konekcija svakako dobija svoje mesto. Za ručno testiranje same funkcionalnosti postoji `-Dlazes.deviceId=...`.
+- Ko bi lažirao MAC, hostname i korisničko ime, mogao bi da uzme mesto. To zahteva pristup podacima mašine i prozor od dva minuta, pa je za ovaj projekat prihvatljivo.
+- Igrač ne vidi šta se dešavalo dok ga nije bilo — poruke se ne baferuju, nego mu se snapshot-om vrati zatečeno stanje.
+- Ako je host izgubio vezu, uloga hosta prelazi na povezanog igrača i **ne vraća mu se** kad se vrati.
+
+---
+
+## Testovi
+
+`server/src/test/java/com/muvrinovci/lazes/server/ServerReconnectTest.java` pokriva kroz pravi TCP soket: držanje mesta, auto-igru umesto odspojenog, povratak istog uređaja, odbijanje drugog uređaja, odbijanje kada mesto ima živu konekciju, istek roka, gašenje napuštene sobe i povratak pre isteka tog roka.

@@ -53,6 +53,17 @@
                 <Button fx:id="joinButton" text="Pridruži se" onAction="#handleJoinRoom"/>
             </HBox>
 
+            <Separator>
+                <VBox.margin>
+                    <Insets top="6" bottom="2"/>
+                </VBox.margin>
+            </Separator>
+
+            <Label text="prekinula ti se veza? vrati se na svoje mesto" styleClass="hint"/>
+
+            <Button fx:id="resumeButton" text="Nastavi partiju" onAction="#handleResume"
+                    maxWidth="Infinity"/>
+
             <Label fx:id="statusLabel" styleClass="error-text" wrapText="true" managed="false" visible="false"/>
         </VBox>
 

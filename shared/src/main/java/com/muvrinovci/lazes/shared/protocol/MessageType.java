@@ -13,6 +13,7 @@ public final class MessageType {
     public static final String CALL_LIAR = "call_liar";
     public static final String DRAW_CARD = "draw_card";
     public static final String LEAVE_ROOM = "leave_room";
+    public static final String RECONNECT = "reconnect";
 
     //  Server -> Klijent 
     public static final String ROOM_JOINED = "room_joined";
@@ -24,6 +25,8 @@ public final class MessageType {
     public static final String CALL_RESULT = "call_result";
     public static final String CARD_DRAWN = "card_drawn";
     public static final String PLAYER_DISCONNECTED = "player_disconnected";
+    public static final String PLAYER_RECONNECTED = "player_reconnected";
+    public static final String GAME_SNAPSHOT = "game_snapshot";
     public static final String GAME_OVER = "game_over";
     public static final String ERROR = "error";
 

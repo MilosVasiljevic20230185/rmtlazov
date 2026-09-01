@@ -24,6 +24,18 @@ public class RoomManager {
     private final Map<String, Room> rooms = new ConcurrentHashMap<>();
     private final SecureRandom random = new SecureRandom();
 
+    /**
+     * Uredjaji koji drze mesto za nekim stolom, mapirani na kod sobe.
+     *
+     * Zahvaljujuci ovom registru klijent pri povratku ne mora da pamti ni kod
+     * sobe - dovoljan je otisak uredjaja sa koga je ispao. Upis traje od ulaska
+     * u sobu do trenutka kada mesto konacno nestane.
+     */
+    private final Map<String, String> deviceRooms = new ConcurrentHashMap<>();
+
+    private int graceSeconds = GameRules.DISCONNECT_GRACE_SECONDS;
+    private int emptyRoomSeconds = GameRules.EMPTY_ROOM_SECONDS;
+
     /** Zajednicki tajmer za sve sobe; svaki zadatak se izvrsava u niti svoje sobe. */
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2, runnable -> {
         Thread thread = new Thread(runnable, "lazes-timer");
@@ -57,8 +69,50 @@ public class RoomManager {
         room.submit(() -> room.join(player, false));
     }
 
+    /**
+     * Vraca igraca na mesto koje ga ceka, ako takvo mesto postoji.
+     *
+     * Sobu pronalazi sam server preko otiska uredjaja, pa klijent ne salje kod
+     * sobe. Povratak je moguc iskljucivo sa uredjaja sa koga je igrac i ispao.
+     */
+    public void reconnect(String deviceId, String playerName, ClientHandler handler) {
+        String roomCode = deviceId == null ? null : deviceRooms.get(deviceId);
+        Room room = roomCode == null ? null : rooms.get(roomCode);
+
+        if (room == null) {
+            handler.send(new ErrorMessage(ErrorCode.RECONNECT_FAILED,
+                    "Nema partije u koju mozete da se vratite."));
+            return;
+        }
+
+        room.submit(() -> room.tryReconnect(handler, deviceId, playerName));
+    }
+
+    int graceSeconds() {
+        return graceSeconds;
+    }
+
+    int emptyRoomSeconds() {
+        return emptyRoomSeconds;
+    }
+
+    /** Skracuje cekanja da integracioni testovi ne bi trajali minutima. */
+    void setTimeoutsForTest(int graceSeconds, int emptyRoomSeconds) {
+        this.graceSeconds = graceSeconds;
+        this.emptyRoomSeconds = emptyRoomSeconds;
+    }
+
+    void registerDevice(String deviceId, String roomCode) {
+        deviceRooms.put(deviceId, roomCode);
+    }
+
+    void unregisterDevice(String deviceId, String roomCode) {
+        deviceRooms.remove(deviceId, roomCode);
+    }
+
     void removeRoom(String code) {
         if (rooms.remove(code) != null) {
+            deviceRooms.values().removeIf(code::equals);
             Log.info("Soba %s je zatvorena (ukupno soba: %d)", code, rooms.size());
         }
     }
@@ -70,6 +124,7 @@ public class RoomManager {
     public void shutdown() {
         rooms.values().forEach(Room::shutdown);
         rooms.clear();
+        deviceRooms.clear();
         scheduler.shutdownNow();
     }
 
