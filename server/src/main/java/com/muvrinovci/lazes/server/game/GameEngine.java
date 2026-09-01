@@ -10,7 +10,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import com.muvrinovci.lazes.shared.GameRules;
 import com.muvrinovci.lazes.shared.model.Card;
@@ -98,14 +97,6 @@ public class GameEngine {
         drawPile.addAll(deck.subList(position, deck.size()));
 
         this.currentIndex = random.nextInt(this.playerIds.size());
-    }
-
-    /** Postavlja tacno odredjeno stanje partije - koristi se samo u testovima. */
-    GameEngine(List<String> playerIds, Map<String, List<Card>> hands, List<Card> drawPile, int startingIndex) {
-        this.playerIds = new ArrayList<>(playerIds);
-        hands.forEach((playerId, cards) -> this.hands.put(playerId, new ArrayList<>(cards)));
-        this.drawPile.addAll(drawPile);
-        this.currentIndex = startingIndex;
     }
 
 
@@ -387,10 +378,5 @@ public class GameEngine {
         this.winnerId = winner;
         this.phase = GamePhase.FINISHED;
         this.pendingPlay = null;
-    }
-
-
-    Set<Card> centerCards() {
-        return new HashSet<>(center);
     }
 }

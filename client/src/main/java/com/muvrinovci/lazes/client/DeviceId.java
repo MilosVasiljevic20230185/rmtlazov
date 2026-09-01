@@ -23,9 +23,6 @@ import java.util.UUID;
  */
 public final class DeviceId {
 
-    /** Za rucno testiranje vise klijenata na istoj masini; nije deo redovnog rada. */
-    private static final String OVERRIDE_PROPERTY = "lazes.deviceId";
-
     private static final int LENGTH = 32;
 
     private static String cached;
@@ -41,11 +38,6 @@ public final class DeviceId {
     }
 
     private static String compute() {
-        String override = System.getProperty(OVERRIDE_PROPERTY);
-        if (override != null && !override.isBlank()) {
-            return override.trim();
-        }
-
         String raw = firstStableMac() + "|" + hostname() + "|" + System.getProperty("user.name", "");
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256")

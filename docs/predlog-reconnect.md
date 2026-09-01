@@ -113,13 +113,7 @@ Odlučeno je da se ta mogućnost ne uvodi. Posledica je da je identitet vezan za
 
 ## Poznata ograničenja
 
-- Dva klijenta na istoj mašini dele otisak, pa povratak za taj slučaj nije podržan. Normalna igra time nije pogođena jer svaka konekcija svakako dobija svoje mesto. Za ručno testiranje same funkcionalnosti postoji `-Dlazes.deviceId=...`.
+- Dva klijenta sa iste mašine dele otisak, pa ne mogu biti u istoj sobi — drugi ulazak se odbija (`SESSION_ACTIVE`). Mogu biti povezani na server i igrati u različitim sobama. Povratak posle prekida podržan je za jedno mesto po mašini.
 - Ko bi lažirao MAC, hostname i korisničko ime, mogao bi da uzme mesto. To zahteva pristup podacima mašine i prozor od dva minuta, pa je za ovaj projekat prihvatljivo.
 - Igrač ne vidi šta se dešavalo dok ga nije bilo — poruke se ne baferuju, nego mu se snapshot-om vrati zatečeno stanje.
 - Ako je host izgubio vezu, uloga hosta prelazi na povezanog igrača i **ne vraća mu se** kad se vrati.
-
----
-
-## Testovi
-
-`server/src/test/java/com/muvrinovci/lazes/server/ServerReconnectTest.java` pokriva kroz pravi TCP soket: držanje mesta, auto-igru umesto odspojenog, povratak istog uređaja, odbijanje drugog uređaja, odbijanje kada mesto ima živu konekciju, istek roka, gašenje napuštene sobe i povratak pre isteka tog roka.

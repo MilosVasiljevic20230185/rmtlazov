@@ -148,6 +148,11 @@ public class Room {
             player.send(new ErrorMessage(ErrorCode.ROOM_FULL, "Soba je puna."));
             return;
         }
+        if (player.getDeviceId() != null && deviceAlreadySeated(player.getDeviceId())) {
+            player.send(new ErrorMessage(ErrorCode.SESSION_ACTIVE,
+                    "Vec ste u ovoj sobi sa ovog uredjaja."));
+            return;
+        }
 
         players.add(player);
         knownNames.put(player.getId(), player.getName());
@@ -761,6 +766,11 @@ public class Room {
 
     private ServerPlayer findPlayer(String playerId) {
         return players.stream().filter(p -> p.getId().equals(playerId)).findFirst().orElse(null);
+    }
+
+    /** Sprecava da isti uredjaj zauzme dva mesta u istoj sobi. */
+    private boolean deviceAlreadySeated(String deviceId) {
+        return players.stream().anyMatch(seat -> deviceId.equals(seat.getDeviceId()));
     }
 
     private long connectedCount() {

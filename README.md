@@ -170,16 +170,6 @@ Protokol iz Dokumenta 3 dopunjen je porukama `start_game`, `room_joined`, `set_a
 
 ---
 
-## Testovi
-
-```bash
-mvn test
-```
-
-Pokriveno je **51 test**: model karata i protokol, sva pravila igre kroz sve faze partije, **5 integracionih testova** koji igraju partiju kroz pravi TCP soket, i **8 testova ponovnog povezivanja** (čuvanje mesta, auto-igra, povratak istog uređaja, gašenje napuštene sobe).
-
----
-
 ## Dokumentacija
 
 Projektna dokumentacija nalazi se u folderu `docs/`:
