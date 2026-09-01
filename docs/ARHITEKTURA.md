@@ -1,0 +1,694 @@
+# Arhitektura i objašnjenje koda
+
+Interni dokument tima **Muvrinovci** — namenjen članovima tima koji treba da razumeju, menjaju i brane kod na odbrani.
+
+Težište je na **mrežnom delu**, jer je on suština predmeta i ujedno najkomplikovaniji deo projekta.
+
+---
+
+## Sadržaj
+
+1. [Pregled u tri rečenice](#1-pregled-u-tri-rečenice)
+2. [Struktura projekta](#2-struktura-projekta)
+3. [Mrežni sloj](#3-mrežni-sloj)
+4. [Protokol — sve poruke](#4-protokol--sve-poruke)
+5. [Model niti i zašto nema `synchronized`](#5-model-niti-i-zašto-nema-synchronized)
+6. [Tajmeri i problem zakasnelih zadataka](#6-tajmeri-i-problem-zakasnelih-zadataka)
+7. [Game engine — pravila igre](#7-game-engine--pravila-igre)
+8. [Klijent](#8-klijent)
+9. [Identitet uređaja i „jedan uređaj = jedno mesto po sobi"](#9-identitet-uređaja-i-jedan-uređaj--jedno-mesto-po-sobi)
+10. [Prekid veze i povratak u partiju (reconnect)](#10-prekid-veze-i-povratak-u-partiju-reconnect)
+11. [Use-case-i i edge case-ovi](#11-use-case-i-i-edge-case-ovi)
+12. [Pitanja za odbranu](#12-pitanja-za-odbranu)
+13. [Gde šta tražiti](#13-gde-šta-tražiti)
+
+---
+
+## 1. Pregled u tri rečenice
+
+Igra je **klijent-server** aplikacija sa **autoritativnim serverom**: server je jedini koji zna pravo stanje partije, a klijenti su „tanki" — samo prikazuju ono što im server pošalje i šalju nazad korisnikove akcije.
+
+Komunikacija ide preko **sirovog TCP soketa**, a poruke su **JSON objekti, jedan po redu** (newline-delimited).
+
+Server nikada ne veruje klijentu: svaku akciju proverava sam — da li si na potezu, da li stvarno imaš te karte, da li je vrednost dozvoljena.
+
+> **Zašto autoritativni server?** Da varanje ne bi bilo moguće. Da klijent drži svoje karte i sam prijavljuje šta baca, izmenjen klijent bi mogao da baci karte koje nema. Ovako klijent uopšte ne zna tuđe karte — server mu šalje samo *broj* tuđih karata.
+
+---
+
+## 2. Struktura projekta
+
+Maven multi-modul projekat sa tri modula:
+
+```
+rmtlazov/
+├── shared/    Model karata i mrezni protokol  (Gson, BEZ JavaFX-a)
+├── server/    Autoritativni server            (Gson + shared, BEZ JavaFX-a)
+└── client/    JavaFX klijent                  (JavaFX + shared)
+```
+
+**Zašto tri modula, a ne jedan?**
+
+| Modul | Razlog postojanja |
+|---|---|
+| `shared` | Protokol mora biti **identičan** na obe strane. Da su klase duplirane, promena na jednoj strani bi tiho pokvarila drugu. Ovako se neslaganje vidi već pri kompajliranju. |
+| `server` | Ne zavisi od JavaFX-a, pa se može pokrenuti **headless** — na virtuelnoj mašini preko SSH-a, bez grafičkog okruženja. |
+| `client` | Jedini modul koji vuče JavaFX. |
+
+> Zbog međuzavisnosti se gradi sa `mvn clean install`, **ne** `package` — `install` smešta `shared` u lokalni Maven repozitorijum, pa `server` i `client` mogu da se pokreću zasebno.
+
+---
+
+## 3. Mrežni sloj
+
+### 3.0 Mapa saradnje klasa
+
+Klase sa crvenom ivicom čine mrežni sloj (rade sa soketom); plave koriste JavaFX; bež su zajednički protokol.
+
+![Mapa saradnje klasa](img/mapa-klasa.png)
+
+Ista poruka putuje kroz `JsonCodec` četiri puta — encode i decode na svakoj strani:
+
+![Put jedne poruke kroz mrežni sloj](img/put-poruke.png)
+
+### 3.1 Zašto TCP a ne UDP
+
+TCP garantuje da poruke stižu **i to redosledom kojim su poslate**. Za ovu igru je to obavezno — ako bi „bacio si 3 sedmice" stiglo pre „nova runda počinje", klijent bi prikazao besmislicu. Igra je na poteze, pa nam kašnjenje od par desetina milisekundi ništa ne znači; pouzdanost nam znači sve.
+
+### 3.2 Okvir poruke (framing)
+
+TCP je **stream bajtova, ne poruka**. To je ključna stvar koju treba razumeti: TCP ne zna gde jedna poruka prestaje a druga počinje. Ako pošalješ dve poruke, mogu stići kao jedan blok, ili kao tri komada — TCP samo garantuje da će bajtovi stići **redom**.
+
+Zato je potreban dogovor gde je granica poruke. Naš dogovor je najjednostavniji mogući: **jedna poruka = jedan red teksta**, granica je znak za novi red.
+
+Zbog toga na obe strane stoji isti obrazac:
+
+```java
+// slanje - println sam dodaje \n
+writer.println(JsonCodec.encode(message));
+
+// citanje - readLine cita tacno do \n
+while ((line = reader.readLine()) != null) { ... }
+```
+
+`PrintWriter` je napravljen sa `autoFlush = true` (drugi argument konstruktora), pa se svaki `println` odmah šalje. Bez toga bi poruke ostajale u baferu i igra bi „štucala".
+
+> **Zašto je `\n` bezbedan razdelnik:** JSON koji šaljemo nikad ne sadrži pravi znak za novi red unutar sebe — Gson ga u stringovima ispisuje kao dva karaktera (`\` i `n`).
+
+Obe strane koriste **UTF-8** eksplicitno (`StandardCharsets.UTF_8`), a ne podrazumevani encoding sistema. To je bitno jer su nam poruke o greškama na srpskom — bez toga bi se na različitim mašinama slova raspala.
+
+### 3.3 Kodiranje poruka: `JsonCodec`
+
+Fajl: [`shared/protocol/JsonCodec.java`](../shared/src/main/java/com/muvrinovci/lazes/shared/protocol/JsonCodec.java)
+
+Problem koji rešava: Gson pri čitanju JSON-a **ne zna u koju klasu treba da ga pretvori**. Stigao je tekst — je li to `play_cards` ili `call_liar`?
+
+Rešenje: svaka poruka nosi obavezno polje `type`, a `JsonCodec` drži **registar** koji tip preslikava u klasu:
+
+```java
+private static final Map<String, Class<? extends Message>> REGISTRY = Map.ofEntries(
+        Map.entry(MessageType.PLAY_CARDS, PlayCardsMessage.class),
+        Map.entry(MessageType.CALL_LIAR,  CallLiarMessage.class),
+        ...);
+```
+
+Čitanje ide u dva koraka:
+
+1. Parsiraj JSON kao običan objekat i pročitaj **samo** polje `type`
+2. Nađi klasu u registru, pa tek onda pusti Gson da popuni tu klasu
+
+Svaka greška — neispravan JSON, nedostaje `type`, nepoznat tip — završava kao `ProtocolException`, koju server hvata i vraća klijentu `error` poruku sa kodom `MALFORMED_MESSAGE`. **Neispravna poruka nikad ne obara server.**
+
+### 3.4 Server: prihvatanje konekcija
+
+Fajl: [`server/GameServer.java`](../server/src/main/java/com/muvrinovci/lazes/server/GameServer.java)
+
+```java
+while (!serverSocket.isClosed()) {
+    Socket socket = serverSocket.accept();              // blokira dok neko ne dodje
+    connections.submit(new ClientHandler(socket, roomManager));
+}
+```
+
+`accept()` **blokira** dok se neko ne poveže. Zato svaka konekcija dobija svoju nit iz `newCachedThreadPool` — inače bi drugi igrač morao da čeka da prvi završi partiju.
+
+Sve niti su **daemon niti**, pa se JVM ugasi čim se glavna nit završi; bez toga bi server visio u pozadini posle `Ctrl+C`.
+
+`start(port)` se odmah vraća, a prihvatanje teče u pozadinskoj niti — zbog toga integracioni testovi mogu da podignu server, odigraju partiju i uredno ga ugase.
+
+Port se bira ovim redosledom: **argument komandne linije → promenljiva okruženja `PORT` → podrazumevanih 5555**. Promenljiva okruženja postoji zbog platformi za hostovanje, koje port često zadaju same.
+
+### 3.5 Server: jedna nit po konekciji
+
+Fajl: [`server/ClientHandler.java`](../server/src/main/java/com/muvrinovci/lazes/server/ClientHandler.java)
+
+Srce mrežnog sloja na serveru. Jedan objekat = jedna TCP konekcija = jedna nit.
+
+```java
+while ((line = reader.readLine()) != null) {
+    if (line.isBlank()) continue;
+    dispatch(line);
+}
+```
+
+`readLine()` vraća `null` kada klijent **uredno** zatvori vezu. Ako veza **pukne** (nestanak struje, prekid mreže), leti `IOException`. **Oba slučaja** završavaju u `finally` bloku koji zove `disconnect("connection_lost")` — zato nijedan način prekida ne ostavlja „duha" za stolom.
+
+Raspoređivanje poruka:
+
+```java
+switch (message.getType()) {
+    case MessageType.CREATE_ROOM -> onCreateRoom(...);   // igrac jos nije u sobi
+    case MessageType.JOIN_ROOM   -> onJoinRoom(...);     // igrac jos nije u sobi
+    default -> forwardToRoom(message);                    // sve ostalo ide sobi
+}
+```
+
+`create_room` i `join_room` obrađuje sam handler jer igrač u tom trenutku **još nije ni u jednoj sobi**, pa nema kome da se prosledi. Sve ostalo ide sobi.
+
+Metoda `send` je **`synchronized`** jer više niti može pisati istom klijentu — nit njegove sobe, a u nekim trenucima i nit koja obrađuje njegovu poruku. Bez toga bi se dve poruke mogle ispreplesti u pola reda i pokvariti framing.
+
+Ime igrača se ovde i **sanitizuje**: prazno ime se odbija (`INVALID_NAME`), a predugačko se skraćuje na 16 znakova.
+
+### 3.6 Server: `RoomManager`
+
+Fajl: [`server/RoomManager.java`](../server/src/main/java/com/muvrinovci/lazes/server/RoomManager.java)
+
+```java
+private final Map<String, Room> rooms = new ConcurrentHashMap<>();
+```
+
+`ConcurrentHashMap` je ovde **obavezan**, jer registru pristupaju niti raznih konekcija istovremeno — jedan igrač pravi sobu dok se drugi pridružuje.
+
+**Kod sobe** je 6 znakova iz azbuke `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`. Namerno **nema `I`, `O`, `0`, `1`** — da se kod ne bi pogrešno pročitao kad ga neko diktira preko telefona. Generisanje se ponavlja dok kod ne bude jedinstven, a koristi `SecureRandom` da kodovi ne budu pogodljivi.
+
+Bitan detalj: `joinRoom` **ne proverava** je li soba puna ili je igra počela. Te provere radi sama soba, u svojoj niti — jer bi provera ovde bila `race condition`: između provere i stvarnog ulaska soba bi se mogla napuniti.
+
+---
+
+## 4. Protokol — sve poruke
+
+Svaka poruka je JSON objekat sa obaveznim poljem `type`. Definicije su u [`shared/protocol/dto/`](../shared/src/main/java/com/muvrinovci/lazes/shared/protocol/dto).
+
+### Klijent → Server
+
+| `type` | Polja | Značenje |
+|---|---|---|
+| `create_room` | `playerName`, `deviceId` | Napravi novu sobu; pošiljalac postaje host |
+| `join_room` | `playerName`, `roomCode`, `deviceId` | Uđi u postojeću sobu |
+| `reconnect` | `deviceId`, `playerName` | Vrati se na sačuvano mesto posle prekida (bez koda sobe) |
+| `player_ready` | `ready` | Menja status spremnosti u lobby-ju |
+| `set_avatar` | `avatar` | Bira boju mesta (`blue`/`red`/`green`/`gold`) |
+| `start_game` | — | Samo host; pokreće partiju |
+| `play_cards` | `cardIds`, `declaredValue` | Baca karte i deklariše vrednost |
+| `call_liar` | — | Proziva onoga ko je upravo bacio |
+| `draw_card` | — | Vuče kartu umesto bacanja |
+| `leave_room` | — | Napušta sobu |
+
+### Server → Klijent
+
+| `type` | Ključna polja | Kada se šalje |
+|---|---|---|
+| `room_joined` | `roomCode`, `playerId`, `host` | Potvrda ulaska — **samo tom igraču** |
+| `lobby_state` | `players[]`, `hostId`, `canStart` | Svaka promena u lobby-ju |
+| `game_start` | `countdownSeconds`, `firstPlayerId` | Partija počinje; klijenti prikazuju 3-2-1 |
+| `hand_update` | `cards[]` | **Samo tom igraču** — njegove karte |
+| `turn_update` | `currentPlayerId`, `tableValue`, `centerCount`, `drawPileCount`, `players[]` (+ `connected`) | Posle svake promene stanja stola |
+| `play_announced` | `playerId`, `declaredCount`, `declaredValue`, `callWindowMs` | Neko je bacio karte |
+| `call_result` | `wasLying`, `revealedCards[]`, `cardsCollectedBy`, `collectedCount` | Neko je prozvao — karte se otkrivaju |
+| `card_drawn` | `playerId`, `automatic` | Neko je vukao kartu |
+| `player_disconnected` | `playerId`, `reason`, `temporary`, `graceSeconds` | Igraču pukla veza (`temporary=true` → mesto se čuva) |
+| `game_snapshot` | celo stanje partije | **Samo tom igraču** — pri povratku u partiju |
+| `player_reconnected` | `playerId`, `playerName` | Igrač se vratio na svoje mesto |
+| `game_over` | `winnerId`, `ranking[]` | Kraj partije |
+| `error` | `code`, `message` | Akcija odbijena |
+
+### Ključna stvar: šta se kome šalje
+
+Ovde se vidi da je server zaista autoritativan:
+
+- `hand_update` ide **samo jednom igraču** (`player.send(...)`) — nikad se ne emituje svima
+- `turn_update` ide svima, ali sadrži samo **brojeve** tuđih karata (`cardCount`), nikad njihov sadržaj
+- `centerCount` je samo broj — karte na centru su okrenute nadole
+- Sadržaj karata se otkriva **isključivo** u `call_result`, i to samo onih koje su upravo bačene
+
+Drugim rečima: **klijent fizički ne poseduje podatak koji bi mu omogućio da vara.**
+
+### Primer jedne razmene
+
+Igrač baca dve karte i tvrdi da su sedmice:
+
+```json
+{"type":"play_cards","cardIds":["7H1","7S2"],"declaredValue":7}
+```
+
+Server prvo pošalje **samo njemu** njegovu novu ruku:
+
+```json
+{"type":"hand_update","cards":["3D1","10C2","KH1","AS2","5D2"]}
+```
+
+pa **svima** novo stanje stola, pa najavu:
+
+```json
+{"type":"turn_update","currentPlayerId":"a3f...","tableValue":7,"centerCount":2,"drawPileCount":76,"turnSeconds":30,"players":[...]}
+{"type":"play_announced","playerId":"a3f...","playerName":"Milos","declaredCount":2,"declaredValue":7,"callWindowMs":5000}
+```
+
+> **Redosled nije slučajan.** U `onPlayCards` se prvo šalje `turn_update`, pa tek onda `play_announced` — da bi klijentu **poslednja primljena poruka uvek bila ona koja određuje fazu** u kojoj se nalazi. Da je obrnuto, `turn_update` bi stigao posle najave i klijent bi zatvorio prozor za prozivanje pre vremena.
+
+Ako neko prozove:
+
+```json
+{"type":"call_liar"}
+```
+
+```json
+{"type":"call_result","callerId":"b7c...","accusedId":"a3f...","declaredValue":7,
+ "wasLying":true,"revealedCards":["7H1","9S2"],"cardsCollectedBy":"a3f...",
+ "collectedCount":2,"nextPlayerId":"b7c..."}
+```
+
+### Kodovi grešaka
+
+Poruka `error` nosi kod iz [`ErrorCode`](../shared/src/main/java/com/muvrinovci/lazes/shared/protocol/ErrorCode.java), pa klijent zna šta da prikaže: `ROOM_NOT_FOUND`, `ROOM_FULL`, `GAME_IN_PROGRESS`, `NOT_IN_ROOM`, `NOT_HOST`, `NOT_ENOUGH_PLAYERS`, `PLAYERS_NOT_READY`, `NOT_YOUR_TURN`, `INVALID_ACTION`, `INVALID_CARDS`, `INVALID_VALUE`, `DRAW_PILE_EMPTY`, `INVALID_NAME`, `MALFORMED_MESSAGE`, `SESSION_ACTIVE` (uređaj već ima mesto/živu konekciju), `RECONNECT_FAILED` (nema čega da se vrati).
+
+---
+
+## 5. Model niti i zašto nema `synchronized`
+
+**Ovo je najvažniji deo za razumevanje projekta.**
+
+### Problem
+
+Tehnička specifikacija (Dokument 3, poglavlje 6) navodi rizik: šta ako **dva igrača istovremeno pošalju `call_liar`**? Obe poruke stižu u razmaku od par milisekundi, na dve različite niti. Bez zaštite bi obe prošle — obojica bi „prozvali", centar bi se podelio dvaput, stanje bi se raspalo.
+
+### Uobičajeno rešenje i zašto ga nismo uzeli
+
+Klasičan pristup je `synchronized` ili `ReentrantLock` oko svake metode koja dira stanje. Radi, ali:
+
+- lako se zaboravi jedno mesto, pa se bag pojavljuje jednom u sto partija
+- otvara mogućnost `deadlock`-a ako se zaključavaju dva objekta
+- teško se testira, jer se greška ne reprodukuje pouzdano
+
+### Naše rešenje: jedna nit po sobi
+
+Svaka `Room` ima **sopstveni jednonitni executor**:
+
+```java
+private final ExecutorService executor = Executors.newSingleThreadExecutor(...);
+
+public Future<?> submit(Runnable task) {
+    return executor.submit(() -> { ... task.run() ... });
+}
+```
+
+**Svaka** izmena stanja sobe prolazi kroz `submit`. Poruke sa mreže:
+
+```java
+// ClientHandler.forwardToRoom
+room.submit(() -> room.handle(player, message));
+```
+
+I istekli tajmeri:
+
+```java
+scheduler.schedule(() -> submit(() -> onTurnTimeout(token)), TURN_SECONDS, SECONDS);
+```
+
+Pošto executor ima **tačno jednu nit**, zadaci se izvršavaju **strogo jedan za drugim**. Ako dva igrača pošalju `call_liar` u istoj milisekundi, oba zadatka uđu u red, ali se izvršavaju sekvencijalno: prvi prođe i prebaci fazu iz `CALL_WINDOW` u `TURN`, a drugi zatim padne na proveri `requirePhase(CALL_WINDOW)` i dobije `error`.
+
+### Posledice
+
+| Prednost | Objašnjenje |
+|---|---|
+| Nema `synchronized` u `Room` ni u `GameEngine` | Nema šta da se zaključava — pristup je već serijalizovan |
+| Nema `deadlock`-a | Nema zaključavanja, pa nema ni ciklusa čekanja |
+| `GameEngine` je običan jednonitni kod | Zato se testira običnim JUnit testovima, bez ikakve konkurentnosti |
+| Sobe rade paralelno | Svaka soba ima svoju nit, pa spora soba ne blokira ostale |
+
+> **Pravilo za tim:** ako dodaješ novu akciju, **nikad** ne diraj stanje sobe direktno iz `ClientHandler`-a ili iz tajmera. Uvek kroz `room.submit(...)`. To je jedino pravilo koje ceo ovaj model drži na okupu.
+
+Jedina dva konkurentna mesta u celom serveru su, dakle: `ConcurrentHashMap` u `RoomManager`-u i `synchronized send` u `ClientHandler`-u.
+
+---
+
+## 6. Tajmeri i problem zakasnelih zadataka
+
+Igra ima dva tajmera:
+
+| Tajmer | Trajanje | Šta radi po isteku |
+|---|---|---|
+| Tajmer poteza | 60 s | Server vuče kartu umesto igrača; ako je špil prazan, baca prvu kartu iz njegove ruke |
+| Prozor za prozivanje | 5 s | Runda se nastavlja, red ide dalje |
+
+Svi tajmeri koriste **zajednički** `ScheduledExecutorService` iz `RoomManager`-a (2 niti za ceo server), ali se svaki istekli zadatak vraća u nit **svoje** sobe preko `submit`.
+
+### Problem zakasnelog tajmera
+
+Zamisli: tajmer poteza je zakazan na 60 s. U 59.99 s igrač odigra potez. Tajmer se otkazuje — ali `cancel()` **ne stiže uvek na vreme**: zadatak je možda već krenuo da se izvršava. Rezultat bi bio da server odigra potez umesto igrača koji je već odigrao.
+
+### Rešenje: token
+
+Soba drži brojač `actionToken`. Svaki put kad se stanje promeni, brojač se uvećava, a zakazani zadatak **pamti vrednost koju je brojač imao u trenutku zakazivanja**:
+
+```java
+private void startTurnTimer() {
+    cancelTimer();
+    long token = ++actionToken;                          // token za OVAJ tajmer
+    pendingTimer = scheduler.schedule(
+            () -> submit(() -> onTurnTimeout(token)), TURN_SECONDS, SECONDS);
+}
+
+private void onTurnTimeout(long token) {
+    if (token != actionToken || state != RoomState.IN_GAME) {
+        return;                                          // stanje se promenilo - odustani
+    }
+    ...
+}
+```
+
+Ako se u međuvremenu bilo šta desilo, `actionToken` je već uvećan, pa se zakasneli zadatak **tiho odbacuje**. Provera se izvršava u niti sobe, dakle sekvencijalno — nema trke.
+
+> Ovo je standardni obrazac, poznat kao *fencing token* ili *generation counter*. Isti trik štiti i odbrojavanje na početku partije (`beginFirstTurn`).
+
+---
+
+## 7. Game engine — pravila igre
+
+Fajl: [`server/game/GameEngine.java`](../server/src/main/java/com/muvrinovci/lazes/server/game/GameEngine.java)
+
+**Jedini autoritet nad stanjem partije**, i namerno **bez ijedne linije mrežnog koda**. Prima akciju, proveri je, vrati ishod kao `record`. Zbog toga se testira običnim JUnit testovima.
+
+### Špil i identifikator karte
+
+Igra ide sa **2 standardna špila = 104 karte**, rangovi 1–13 (As=1 … Kralj=13), bez džokera.
+
+Pošto se igra sa dva špila, **ista karta postoji dvaput**. Zato identifikator nosi i redni broj špila:
+
+```
+7H1  = sedmica herc iz prvog spila
+7H2  = sedmica herc iz drugog spila
+10D2 = desetka karo iz drugog spila
+```
+
+Bez toga server ne bi mogao da proveri vlasništvo — igrač bi poslao `7H`, a server ne bi znao na koju od dve misli.
+
+> Dokumentacija je na dva mesta pominjala opseg 1–14, što ne odgovara standardnom špilu od 13 rangova; usvojeno je 1–13.
+
+### Faze
+
+```
+TURN  ──(playCards)──►  CALL_WINDOW  ──(callLiar ili istek)──►  TURN
+  │                                                              │
+  └──(drawCard)──────────────────────────────────────────────────┘
+```
+
+`GamePhase` ima tri vrednosti: `TURN`, `CALL_WINDOW`, `FINISHED`. Svaka akcija prvo proverava fazu (`requirePhase`), pa tek onda ostalo.
+
+### Validacije u `playCards`
+
+Svaka provera baca `GameException` sa svojim kodom:
+
+1. faza mora biti `TURN`
+2. pošiljalac mora biti na potezu → `NOT_YOUR_TURN`
+3. bar jedna karta, najviše 8 → `INVALID_CARDS`
+4. ista karta ne sme biti navedena dvaput → `INVALID_CARDS`
+5. vrednost mora biti 1–13 → `INVALID_VALUE`
+6. ako runda nije otvorena, vrednost mora biti jednaka `tableValue` → `INVALID_VALUE`
+7. **igrač mora stvarno imati svaku od tih karata u ruci** → `INVALID_CARDS`
+
+Tačka 7 je ta koja onemogućava varanje izmenjenim klijentom.
+
+### Ko kupi karte pri prozivanju
+
+```java
+boolean wasLying = revealed.stream().anyMatch(card -> card.value() != declaredValue);
+String collectorId = wasLying ? accusedId : callerId;
+```
+
+- **lagao** → optuženi kupi ceo centar, prozivač je sledeći na potezu
+- **govorio istinu** → prozivač kupi ceo centar, optuženi igra ponovo
+
+U oba slučaja prozivanje **zatvara rundu**: `tableValue` se vraća na `OPEN_ROUND`, pa sledeći igrač slobodno bira novu vrednost. Vučenje karte, za razliku od toga, **ne menja** vrednost runde.
+
+### Uslov pobede — suptilnost
+
+Igrač koji odigra poslednje karte **ne pobeđuje odmah**. Mora prvo da istekne prozor za prozivanje:
+
+```java
+// closeCallWindow - niko nije prozvao
+if (hands.get(lastPlayerId).isEmpty()) {
+    finish(lastPlayerId);        // TEK SADA je pobedio
+}
+```
+
+Ako ga neko prozove i **lagao je**, kupi ceo centar i nastavlja da igra — dakle nije pobedio. Ako je **govorio istinu** i ostao bez karata, pobedio je uprkos prozivanju:
+
+```java
+String winner = !wasLying && hands.get(accusedId).isEmpty() ? accusedId : null;
+```
+
+---
+
+## 8. Klijent
+
+### `NetworkClient` — mrežni sloj klijenta
+
+Fajl: [`client/NetworkClient.java`](../client/src/main/java/com/muvrinovci/lazes/client/NetworkClient.java)
+
+Ogledalo `ClientHandler`-a. Ima **zasebnu nit za čitanje**, jer bi `readLine()` u JavaFX niti zamrznuo ceo prozor.
+
+Ključni detalj — **`Platform.runLater`**:
+
+```java
+Message message = JsonCodec.decode(line);
+Platform.runLater(() -> {
+    Consumer<Message> current = listener;
+    if (current != null) current.accept(message);
+});
+```
+
+JavaFX ima strogo pravilo: **grafički interfejs se sme menjati isključivo iz JavaFX Application Thread-a**. Poruka stiže na mrežnoj niti, pa se preko `Platform.runLater` prebacuje u JavaFX nit. Bez toga bi aplikacija povremeno pucala uz `IllegalStateException: Not on FX application thread`.
+
+Povezivanje ima **timeout od 5 sekundi**:
+
+```java
+socket.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT_MS);
+```
+
+Bez toga bi na pogrešnoj IP adresi klijent visio ceo minut dok operativni sistem ne odustane.
+
+Polje `closing` razlikuje **naše** zatvaranje veze od **pucanja** veze — da se ne prikaže „Veza je prekinuta" kad korisnik sam izađe iz sobe.
+
+### Ekrani
+
+`ViewNavigator` menja scene i, što je bitnije, **prespaja slušaoca mreže na novi kontroler**:
+
+```java
+ScreenController controller = loader.getController();
+controller.init(this);
+network.setListener(controller::onMessage);
+```
+
+U svakom trenutku **tačno jedan** kontroler prima poruke. Svaki implementira `ScreenController` sa dve metode: `init(navigator)` i `onMessage(message)`.
+
+| Ekran | FXML | Šta radi |
+|---|---|---|
+| Glavni meni | `MainMenu.fxml` | Ime, adresa servera, port; kreiranje i pridruživanje sobi |
+| Lobby | `Lobby.fxml` | Kod sobe, lista igrača, Ready, izbor boje, Start (samo host) |
+| Sto | `Table.fxml` | Ruka, protivnici, centar, tajmeri, dugmad, log |
+
+`GameSession` drži podatke koje dele svi ekrani: ime, `playerId` koji je dodelio server, kod sobe i da li si host.
+
+### Karte se crtaju u kodu
+
+Fajl: [`client/view/CardView.java`](../client/src/main/java/com/muvrinovci/lazes/client/view/CardView.java)
+
+Karta se crta JavaFX oblicima i Unicode simbolima (♠ ♥ ♦ ♣) — **projekat ne zavisi ni od jednog slikovnog fajla**, pa nema problema sa putanjama resursa ni licencama slika.
+
+Ruka se prikazuje sortirana rastuće (`Card.BY_VALUE`), pa iste vrednosti stoje jedna uz drugu — igrač odmah vidi koliko ima karata neke vrednosti, što je bitno jer se baca 1–8 karata **iste** deklarisane vrednosti.
+
+---
+
+## 9. Identitet uređaja i „jedan uređaj = jedno mesto po sobi"
+
+Za povratak u partiju posle prekida veze serveru treba način da prepozna „ovo je taj isti igrač", a projekat namerno **nema account ni prijavu**. Rešenje je **otisak uređaja** ([`DeviceId`](../client/src/main/java/com/muvrinovci/lazes/client/DeviceId.java) na klijentu).
+
+### Kako se računa otisak
+
+```
+deviceId = sha256(MAC | hostname | user.name)   // prvih 32 heks znaka
+```
+
+- MAC je **leksikografski najmanja** adresa među nevirtuelnim karticama — sortira se da uključivanje VPN-a ili dokovanje laptopa ne promeni otisak.
+- Sirov MAC nikada ne napušta mašinu — šalje se samo heš.
+- Ništa se ne upisuje na disk; otisak se računa iznova pri svakom pokretanju. Nema profila ni sesije koja bi preživela izvan mašine.
+
+Klijent ga šalje uz `create_room`, `join_room` i `reconnect`. Krhkost otiska ne smeta jer je prozor za povratak kratak (2 minuta) — za to vreme se ni hostname ni mrežne kartice ne menjaju.
+
+### Pravilo: jedan uređaj ne može dva mesta u istoj sobi
+
+`Room.join` odbija ulazak ako u toj sobi već postoji mesto sa istim otiskom:
+
+```java
+if (player.getDeviceId() != null && deviceAlreadySeated(player.getDeviceId())) {
+    player.send(new ErrorMessage(ErrorCode.SESSION_ACTIVE, "Vec ste u ovoj sobi sa ovog uredjaja."));
+    return;
+}
+```
+
+Provera je u niti sobe (bez trke). Bitno: blokada je **po sobi**, ne globalno — sa istog računara se sme povezati više klijenata i biti u **različitim** sobama. Zabranjeno je jedino da dva klijenta sa istog računara sednu za **isti** sto, čime jedan čovek ne može da kontroliše dva mesta u istoj partiji.
+
+> Pošto dva klijenta sa iste mašine dele otisak, oni ne mogu da testiraju partiju zajedno na jednom računaru. Za pravu igru — svako na svom računaru — to nije ograničenje.
+
+---
+
+## 10. Prekid veze i povratak u partiju (reconnect)
+
+Kad igraču pukne veza usred partije, mesto mu se **ne briše odmah** — čuva se, server igra umesto njega, i on ima rok da se vrati sa istog uređaja. (Slično auto-odgovoru u Slagalici.)
+
+### Šta se dešava na prekid
+
+`ClientHandler` na prekid (uredan `null` ili `IOException`) zove `disconnect`, koji ide u nit sobe → `Room.onConnectionLost`:
+
+```java
+void onConnectionLost(ServerPlayer player, String reason) {
+    if (state == RoomState.IN_GAME && players.contains(player)) {
+        holdSeat(player, reason);      // partija u toku -> cuvaj mesto
+    } else {
+        leave(player, reason);         // u lobiju -> obicno izlazi
+    }
+}
+```
+
+`holdSeat`:
+
+- otkači konekciju sa mesta (`setHandler(null)`) i zapamti trenutak prekida,
+- ako je otišao host, uloga hosta prelazi na povezanog igrača,
+- pokrene **grace tajmer** `DISCONNECT_GRACE_SECONDS` (120 s); po isteku `expireSeat` konačno ukloni mesto,
+- javi svima `player_disconnected` sa `temporary=true` i `graceSeconds`.
+
+Pravila igre (`GameEngine`) se **ne diraju** — auto-igra je već postojala kroz `onTurnTimeout` (vuče kartu, a ako je špil prazan baca najnižu). Jedina razlika: tajmer poteza za **odspojeno** mesto traje `DISCONNECTED_TURN_SECONDS` (3 s) umesto punih 60 s, da partija ne stoji.
+
+### Povratak: `reconnect`
+
+Klijent klikne „Nastavi partiju" i pošalje `reconnect {deviceId}`. `RoomManager` zna gde je uređaj bio (registar `deviceId → roomCode`), pa klijent **ne šalje ni kod sobe**. `Room.tryReconnect`:
+
+- ako mesto sa tim otiskom **već ima živu konekciju** → odbija `SESSION_ACTIVE` (mesto se ne otima),
+- inače otkaže grace tajmer, zakači novu konekciju na mesto, i pošalje `game_snapshot` sa celim stanjem (ruka, sto, faza, špil, preostalo vreme),
+- javi svima `player_reconnected`,
+- ako partija baš čeka njegov potez, dobija **pun** tajmer (ne ostatak skraćenog).
+
+### Napuštena soba (svi ispali)
+
+Ako u sobi ostane **nula povezanih**, partija se **zaledi** (`freeze`): tajmeri se otkažu, auto-igra stane, i kreće tajmer `EMPTY_ROOM_SECONDS` (60 s). Vrati li se neko — `unfreeze`, tekuća faza dobija pun tajmer iznova. Ne vrati li se niko — partija se prekida i soba briše.
+
+> `EMPTY_ROOM_SECONDS` (60 s) je kraći od grace perioda mesta (120 s), pa kad svi ispadnu, soba umre pre nego što pojedinačna mesta isteknu. Svesna odluka — inače bi automatski potezi doigrali celu partiju dok je niko ne gleda.
+
+### Protokol — dodato za reconnect
+
+- `reconnect` (klijent → server): `deviceId`, `playerName`
+- `game_snapshot` (server → klijent): celo stanje partije za vraćenog igrača
+- `player_reconnected` (server → klijent): `playerId`, `playerName`
+- `create_room` / `join_room` dobili `deviceId`; `player_disconnected` dobio `temporary` + `graceSeconds`; `turn_update → PlayerInfo` dobio `connected`
+- novi kodovi grešaka: `RECONNECT_FAILED`, `SESSION_ACTIVE`
+
+Detaljan opis odluka i razmatranih alternativa je u [predlog-reconnect.md](predlog-reconnect.md).
+
+---
+
+## 11. Use-case-i i edge case-ovi
+
+### Glavni tokovi
+
+| Use-case | Tok |
+|---|---|
+| Kreiranje sobe | `create_room` → server generiše kod, pošiljalac je host, ulazi u lobi |
+| Pridruživanje | `join_room {kod}` → provere (postoji, nije puna, nije počela, uređaj već nije za stolom) → lobi |
+| Početak partije | host `start_game` (svi spremni, ≥2) → odbrojavanje 3-2-1 → svako 7 karata |
+| Bacanje | `play_cards {karte, vrednost}` → centar, otvara se prozor za prozivanje (5 s) |
+| Prozivanje | `call_liar` → karte se otkriju, gubitnik kupi centar, runda se resetuje |
+| Vučenje | `draw_card` → karta u ruku, red dalje, vrednost runde nepromenjena |
+| Pobeda | poslednje karte odigrane i niko ne prozove u prozoru → pobeda |
+| Prekid + povratak | prekid → mesto se čuva 2 min, server auto-igra → `reconnect` → nastavak |
+
+### Edge case-ovi i kako su rešeni
+
+| Situacija | Ponašanje |
+|---|---|
+| Dva klijenta sa istog računara u istu sobu | Drugi odbijen `SESSION_ACTIVE`; smeju u različite sobe → poglavlje 9 |
+| Dva igrača prozovu istovremeno | Jedna nit po sobi serijalizuje; drugi padne na proveri faze → poglavlje 5 |
+| Tajmer istekne baš dok igrač igra | `actionToken` poništi zakasneli tajmer → poglavlje 6 |
+| Igra sa 2 špila — duplikat karte | `deckIndex` u ID-u (`7H1` vs `7H2`) → poglavlje 7 |
+| Igrač odigra poslednje karte pa ga prozovu | Lagao → kupi centar, nastavlja (nije pobeda); istinu → pobeda uprkos prozivanju → poglavlje 7 |
+| Igraču pukne veza usred poteza | Mesto se čuva, server auto-igra na 3 s po potezu → poglavlje 10 |
+| Host izgubi vezu | Uloga hosta prelazi na povezanog igrača; ne vraća mu se pri povratku |
+| Svi izgube vezu | Partija se zaledi 60 s; vrati li se neko — nastavlja, inače soba umire → poglavlje 10 |
+| Povratak, a staro mesto još živo | Odbijen `SESSION_ACTIVE` — mesto se ne otima |
+| Povratak posle isteka 2 min | `RECONNECT_FAILED` — nema više čega da se vrati |
+| Pogrešan / nepostojeći kod sobe | `ROOM_NOT_FOUND` |
+| Peti igrač | `ROOM_FULL` |
+| Pridruživanje partiji koja je počela | `GAME_IN_PROGRESS` |
+| Neispravna / oštećena poruka | `MALFORMED_MESSAGE`, server ostaje živ → poglavlje 3.3 |
+
+### Poznata ograničenja
+
+- Identitet je vezan za mašinu — **nema cross-device** povratka (PC → telefon). Bez accounta bi korisnik morao sam da nosi neki dokaz; svesno nije uvedeno.
+- Ko bi lažirao MAC, hostname i korisničko ime mogao bi da preuzme mesto u prozoru od 2 minuta — za projekat prihvatljivo.
+- Vraćeni igrač ne vidi šta se dešavalo dok ga nije bilo; dobija zatečeno stanje kroz snapshot.
+
+---
+
+## 12. Pitanja za odbranu
+
+**„Kako sprečavate da dva igrača istovremeno prozovu?"**
+Svaka soba ima jednonitni executor; sve poruke i tajmeri prolaze kroz `room.submit(...)`, pa se izvršavaju sekvencijalno. Drugi prozivač padne na proveri faze i dobije `error`. → poglavlje 5
+
+**„Zašto TCP a ne UDP?"**
+Potreban je garantovan redosled poruka; igra je na poteze pa nam kašnjenje nije bitno. → poglavlje 3.1
+
+**„Kako znate gde se jedna poruka završava?"**
+TCP je stream bajtova, ne poruka. Dogovor je: jedna poruka = jedan red, razdelnik je znak za novi red. → poglavlje 3.2
+
+**„Može li izmenjen klijent da vara?"**
+Ne. Server proverava vlasništvo svake karte, a klijent ni ne dobija sadržaj tuđih karata — samo brojeve. → poglavlja 4 i 7
+
+**„Šta ako igraču pukne veza usred partije?"**
+Mesto mu se ne briše — čuva se 2 minuta, server auto-igra umesto njega, a on može da se vrati sa istog uređaja i nastavi. → poglavlje 10
+
+**„Kako igrač da se vrati bez accounta?"**
+Server ga prepozna po otisku uređaja (heš MAC-a, imena mašine i korisnika); klijent ne šalje ni kod sobe. → poglavlja 9 i 10
+
+**„Zašto dva klijenta sa istog računara ne mogu u istu sobu?"**
+Dele isti otisak, pa `Room.join` odbija drugog sa `SESSION_ACTIVE` — jedan čovek ne kontroliše dva mesta. Smeju u različite sobe. → poglavlje 9
+
+**„Šta ako tajmer istekne baš dok igrač igra?"**
+Token mehanizam — zakasneli zadatak vidi da se `actionToken` promenio i tiho odustaje. → poglavlje 6
+
+**„Zašto su karte identifikovane sa `7H1` a ne `7H`?"**
+Igra se sa dva špila, pa ista karta postoji dvaput; bez rednog broja špila server ne bi mogao da proveri vlasništvo. → poglavlje 7
+
+**„Zašto tri Maven modula?"**
+Protokol mora biti identičan na obe strane, a server ne sme da zavisi od JavaFX-a da bi mogao headless. → poglavlje 2
+
+---
+
+## 13. Gde šta tražiti
+
+| Tema | Fajl |
+|---|---|
+| Prihvatanje konekcija | `server/GameServer.java` |
+| Čitanje i slanje poruka | `server/ClientHandler.java` |
+| Sobe, kodovi, registar uređaja | `server/RoomManager.java` |
+| Stanje sobe, tajmeri, čuvanje mesta, reconnect | `server/Room.java` |
+| Igrač na serveru (identitet, konekcija) | `server/ServerPlayer.java` |
+| Pravila igre | `server/game/GameEngine.java` |
+| Sastavljanje špila | `server/game/Deck.java` |
+| Protokol — tipovi i DTO | `shared/protocol/` |
+| Kodiranje JSON-a | `shared/protocol/JsonCodec.java` |
+| Konstante pravila i tajmera | `shared/GameRules.java` |
+| Model karte | `shared/model/Card.java` |
+| Mrežni sloj klijenta | `client/NetworkClient.java` |
+| Otisak uređaja | `client/DeviceId.java` |
+| Ekrani i navigacija | `client/ViewNavigator.java`, `client/controller/` |
+| Crtanje karata | `client/view/CardView.java` |
