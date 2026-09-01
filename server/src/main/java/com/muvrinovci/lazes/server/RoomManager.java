@@ -33,8 +33,8 @@ public class RoomManager {
      */
     private final Map<String, String> deviceRooms = new ConcurrentHashMap<>();
 
-    private int graceSeconds = GameRules.DISCONNECT_GRACE_SECONDS;
-    private int emptyRoomSeconds = GameRules.EMPTY_ROOM_SECONDS;
+    private final int graceSeconds = GameRules.DISCONNECT_GRACE_SECONDS;
+    private final int emptyRoomSeconds = GameRules.EMPTY_ROOM_SECONDS;
 
     /** Zajednicki tajmer za sve sobe; svaki zadatak se izvrsava u niti svoje sobe. */
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2, runnable -> {
@@ -96,12 +96,6 @@ public class RoomManager {
         return emptyRoomSeconds;
     }
 
-    /** Skracuje cekanja da integracioni testovi ne bi trajali minutima. */
-    void setTimeoutsForTest(int graceSeconds, int emptyRoomSeconds) {
-        this.graceSeconds = graceSeconds;
-        this.emptyRoomSeconds = emptyRoomSeconds;
-    }
-
     void registerDevice(String deviceId, String roomCode) {
         deviceRooms.put(deviceId, roomCode);
     }
@@ -115,10 +109,6 @@ public class RoomManager {
             deviceRooms.values().removeIf(code::equals);
             Log.info("Soba %s je zatvorena (ukupno soba: %d)", code, rooms.size());
         }
-    }
-
-    public int roomCount() {
-        return rooms.size();
     }
 
     public void shutdown() {

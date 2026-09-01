@@ -59,10 +59,6 @@ public class GameServer {
         return serverSocket == null ? -1 : serverSocket.getLocalPort();
     }
 
-    public RoomManager getRoomManager() {
-        return roomManager;
-    }
-
     public void stop() {
         try {
             if (serverSocket != null) {
