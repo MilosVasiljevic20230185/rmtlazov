@@ -26,9 +26,8 @@ public class RoomManager {
 
     /**
      * Uredjaji koji drze mesto za nekim stolom, mapirani na kod sobe.
-     *
-     * Zahvaljujuci ovom registru klijent pri povratku ne mora da pamti ni kod
-     * sobe - dovoljan je otisak uredjaja sa koga je ispao. Upis traje od ulaska
+     * Klijent pri povratku ne mora da pamti ni kod
+     * sobe dovoljan je otisak uredjaja sa koga je ispao. Upis traje od ulaska
      * u sobu do trenutka kada mesto konacno nestane.
      */
     private final Map<String, String> deviceRooms = new ConcurrentHashMap<>();
@@ -36,7 +35,7 @@ public class RoomManager {
     private final int graceSeconds = GameRules.DISCONNECT_GRACE_SECONDS;
     private final int emptyRoomSeconds = GameRules.EMPTY_ROOM_SECONDS;
 
-    /** Zajednicki tajmer za sve sobe; svaki zadatak se izvrsava u niti svoje sobe. */
+    /** Zajednicki tajmer za sve sobe, svaki zadatak se izvrsava u niti svoje sobe. */
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2, runnable -> {
         Thread thread = new Thread(runnable, "lazes-timer");
         thread.setDaemon(true);
@@ -70,7 +69,7 @@ public class RoomManager {
     }
 
     /**
-     * Vraca igraca na mesto koje ga ceka, ako takvo mesto postoji.
+     * Vraca igraca na mesto koje ga ceka, ako postoji mesto.
      *
      * Sobu pronalazi sam server preko otiska uredjaja, pa klijent ne salje kod
      * sobe. Povratak je moguc iskljucivo sa uredjaja sa koga je igrac i ispao.

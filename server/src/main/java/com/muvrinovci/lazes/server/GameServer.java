@@ -22,9 +22,9 @@ public class GameServer {
     private Thread acceptThread;
 
     /**
-     * Pokrece server i odmah se vraca; prihvatanje konekcija tece u zasebnoj niti.
+     * Pokrece server i odmah se vraca, prihvatanje konekcija tece u posebnoj niti.
      *
-     * port na kome server slusa;  0 znaci da ga bira operativni sistem
+     * port na kome server slusa,  0 znaci da ga bira operativni sistem
      */
     public void start(int port) throws IOException {
         serverSocket = new ServerSocket(port);

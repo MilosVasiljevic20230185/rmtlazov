@@ -8,7 +8,7 @@ public class CreateRoomMessage extends Message {
 
     private String playerName;
 
-    /** Otisak uredjaja; sluzi da server prepozna igraca ako mu pukne veza. */
+    /** Otisak uredjaja, sluzi da server prepozna igraca ako mu pukne veza. */
     private String deviceId;
 
     public CreateRoomMessage() {

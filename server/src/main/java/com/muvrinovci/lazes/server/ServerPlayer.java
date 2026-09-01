@@ -9,7 +9,7 @@ import com.muvrinovci.lazes.shared.protocol.Message;
  *
  * Mesto sme da nadzivi svoju konekciju: dok traje grace period posle prekida
  * veze handler je null, mesto ostaje za stolom, a poruke koje bi mu
- * isle se preskacu. Celo stanje mu se vrati snapshot-om kada se ponovo javi.
+ * isle se preskacu. Celo stanje mu se vrati snapshotom kada se ponovo javi.
  */
 public class ServerPlayer {
 
@@ -22,10 +22,10 @@ public class ServerPlayer {
     private boolean ready;
     private Room room;
 
-    /** Otisak uredjaja sa koga je igrac usao; jedini nacin da se prepozna pri povratku. */
+    /** Otisak uredjaja sa koga je igrac usao  */
     private String deviceId;
 
-    /** Trenutak prekida veze; sluzi da se razluce mesta koja cekaju povratak. */
+    /** Trenutak prekida veze, sluzi da se razlikuju mesta koja cekaju povratak. */
     private long disconnectedAt;
 
     public ServerPlayer(ClientHandler handler, String name) {
@@ -98,7 +98,7 @@ public class ServerPlayer {
         return handler != null;
     }
 
-    /** Salje poruku igracu; dok mesto nema konekciju poruka se tiho preskace. */
+    /** Salje poruku igracu, dok mesto nema konekciju poruka se tiho preskace. */
     public void send(Message message) {
         ClientHandler target = handler;
         if (target != null) {

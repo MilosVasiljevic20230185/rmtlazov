@@ -338,7 +338,7 @@ public class TableController implements ScreenController {
         if (message.isTemporary()) {
             offlineIds.add(message.getPlayerId());
             redrawSeats();
-            addLog(message.getPlayerName() + " je izgubio vezu — mesto mu se čuva "
+            addLog(message.getPlayerName() + " je izgubio vezu mesto mu se čuva "
                     + message.getGraceSeconds() / 60 + " min, server igra umesto njega.", true);
             return;
         }
@@ -438,7 +438,7 @@ public class TableController implements ScreenController {
 
             if (offlineIds.contains(player.getId())) {
                 seat.getStyleClass().add("seat-offline");
-                Label note = new Label("veza pukla — mesto se čuva");
+                Label note = new Label("veza pukla, mesto se čuva");
                 note.getStyleClass().add("seat-offline-note");
                 seat.getChildren().add(note);
             }
@@ -485,7 +485,7 @@ public class TableController implements ScreenController {
 
     private void renderTableValue() {
         if (tableValue <= 0) {
-            tableValueLabel.setText("Nova runda — biraš vrednost");
+            tableValueLabel.setText("Nova runda biraš vrednost");
             valueCombo.setDisable(false);
         } else {
             String label = Rank.fromValue(tableValue).label();
@@ -515,7 +515,7 @@ public class TableController implements ScreenController {
         pause.play();
     }
 
-    // Dugmad i tajmer
+    // Dugmici i tajmer
 
     private void updateControls() {
         int selected = selectedCardIds().size();
@@ -555,7 +555,7 @@ public class TableController implements ScreenController {
 
     private void onTimerElapsed() {
         if (callWindowActive) {
-            // Prozor za prozivanje je istekao; server ce poslati novo stanje stola.
+            // Prozor za prozivanje je isteko, server ce poslati novo stanje stola.
             callWindowActive = false;
             updateControls();
         }

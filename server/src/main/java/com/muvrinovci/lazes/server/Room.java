@@ -179,7 +179,7 @@ public class Room {
      * Konekcija igraca je pukla.
      *
      * Tokom partije mu se mesto cuva i potezi mu se resavaju automatski, van
-     * partije se ponasa kao i do sada - odmah napusta sobu.
+     * partije se ponasa kao i do sada, odmah napusta sobu.
      */
     void onConnectionLost(ServerPlayer player, String reason) {
         if (state == RoomState.IN_GAME && players.contains(player)) {
@@ -629,8 +629,7 @@ public class Room {
     /**
      * U sobi vise nema nikoga da gleda partiju, pa se ona pauzira.
      *
-     * Bez ovoga bi automatski potezi doigrali celu partiju dok su svi odspojeni.
-     * Ako se u roku od EMPTY_ROOM_SECONDS niko ne vrati, soba se gasi.
+     * Bez ovoga bi automatski potezi igrali u krug i vukli karte 
      */
     private void freeze() {
         if (frozen) {
@@ -648,7 +647,7 @@ public class Room {
         emptyRoomTimer = schedule(this::closeAbandonedRoom, emptyRoomSeconds, TimeUnit.SECONDS);
     }
 
-    /** Neko se vratio pre isteka roka; tekuca faza dobija pun tajmer iznova. */
+    /** Neko se vratio pre isteka roka, tekuca faza dobija pun tajmer iznova. */
     private void unfreeze() {
         cancelEmptyRoomTimer();
         frozen = false;

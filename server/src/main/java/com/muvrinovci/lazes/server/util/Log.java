@@ -5,7 +5,7 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * Jednostavno logovanje na konzolu sa vremenskom oznakom.
- * Svaka konekcija, soba i potez se loguju - vidi US-19.
+ * Svaka konekcija, soba i potez se loguju.
  */
 public final class Log {
 

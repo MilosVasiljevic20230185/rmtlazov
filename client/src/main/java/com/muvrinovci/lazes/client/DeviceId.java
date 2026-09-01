@@ -15,8 +15,8 @@ import java.util.UUID;
  * Otisak uredjaja na kome klijent radi.
  *
  * Sluzi iskljucivo da server prepozna igraca koji se vraca posle prekida veze,
- * i to samo sa istog uredjaja - otisak se ne moze preneti na drugi racunar.
- * Salje se kao heks heš, sirova MAC adresa nikada ne napusta masinu.
+ * i to samo sa istog uredjaja. otisak se ne moze preneti na drugi racunar.
+ * Salje se kao heks heš, MAC adresa.
  *
  * Racuna se jednom pri prvom pozivu i ostaje u memoriji; nista se ne upisuje
  * na disk, pa nema profila ni sesije koja bi preživela gasenje aplikacije.
@@ -44,18 +44,13 @@ public final class DeviceId {
                     .digest(raw.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest).substring(0, LENGTH);
         } catch (NoSuchAlgorithmException e) {
-            // SHA-256 postoji na svakoj Java platformi; ako ipak ne postoji,
-            // povratak u partiju nece raditi, ali klijent mora da nastavi.
             return UUID.randomUUID().toString().replace("-", "").substring(0, LENGTH);
         }
     }
 
     /**
-     * MAC adresa prve stabilne mrezne kartice.
-     *
-     * Adrese se sortiraju pa se uzima najmanja, tako da ukljucivanje VPN-a ili
-     * dokovanje laptopa ne promeni otisak. Virtuelne i loopback kartice se
-     * preskacu iz istog razloga.
+     * MAC adresa prve stabilne mrezne kartice. Bira najmanju MAC adresu koju naidje u nizu
+     * da bi uvek nasao istu adresu. Ne ubacuje u listu VPN ili virtuelne adrese
      */
     private static String firstStableMac() {
         List<String> addresses = new ArrayList<>();

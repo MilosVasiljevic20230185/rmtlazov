@@ -6,7 +6,7 @@ import com.muvrinovci.lazes.shared.protocol.MessageType;
 /**
  * Klijent -> Server: povratak na mesto koje se cuva posle prekida veze.
  *
- * Kod sobe se ne salje - server sam zna u kojoj sobi je mesto ovog uredjaja.
+ * Kod sobe se ne salje, server sam zna u kojoj sobi je mesto ovog uredjaja.
  * Povratak je moguc iskljucivo sa uredjaja sa koga je igrac i ispao.
  */
 public class ReconnectMessage extends Message {

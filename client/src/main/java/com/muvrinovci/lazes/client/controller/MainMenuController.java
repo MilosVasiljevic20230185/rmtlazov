@@ -79,7 +79,7 @@ public class MainMenuController implements ScreenController {
     /**
      * Povratak na mesto koje se cuva posle prekida veze.
      *
-     * Kod sobe se ne unosi - server prepoznaje uredjaj po otisku i sam zna gde
+     * Kod sobe se ne unosi, server prepoznaje uredjaj po otisku i sam zna gde
      * je igrac bio. Povratak radi iskljucivo sa uredjaja sa koga je i ispao.
      */
     @FXML
@@ -92,7 +92,7 @@ public class MainMenuController implements ScreenController {
         navigator.getNetwork().send(new ReconnectMessage(DeviceId.get(), nameField.getText().trim()));
     }
 
-    /** Povezuje se na server; vraca {@code false} ako unos nije ispravan ili server ne odgovara. */
+    /** Povezuje se na server; vraca false ako unos nije ispravan ili server ne odgovara. */
     private boolean connect() {
         hideStatus();
 
@@ -161,7 +161,7 @@ public class MainMenuController implements ScreenController {
                 showStatus(((ErrorMessage) message).getMessage());
             }
             default -> {
-                // Ostale poruke u glavnom meniju nisu od znacaja.
+                
             }
         }
     }

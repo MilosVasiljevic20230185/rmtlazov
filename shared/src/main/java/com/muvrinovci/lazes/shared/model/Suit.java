@@ -1,8 +1,8 @@
 package com.muvrinovci.lazes.shared.model;
 
-/**
- * Boja karte. Kod boje ({@code H}, {@code D}, {@code C}, {@code S}) koristi se
- * u identifikatoru karte koji putuje kroz mrezni protokol.
+/*
+  Boja karte. Kod boje ( H, D, C, S) koristi se
+  u identifikatoru karte koji putuje kroz mrezni protokol.
  */
 public enum Suit {
 
@@ -27,7 +27,7 @@ public enum Suit {
         return code;
     }
 
-    /** Unicode simbol boje,, klijent ga crta na karti umesto slike. */
+    /* Unicode simbol boje,, klijent ga crta na karti umesto slike. */
     public char symbol() {
         return symbol;
     }

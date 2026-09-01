@@ -150,7 +150,7 @@ public class ClientHandler implements Runnable {
 
     private void disconnect(String reason) {
         // Ako je mesto u medjuvremenu preuzela nova konekcija, ova nit vise nema
-        // sta da rusi - inace bi gasenje starog soketa izbacilo vraceni igraca.
+        // sta da rusi, inace bi gasenje starog soketa izbacilo vraceni igraca.
         ServerPlayer seat = player;
         if (seat != null && seat.getRoom() != null && seat.getHandler() == this) {
             Room room = seat.getRoom();

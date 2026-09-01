@@ -3,7 +3,7 @@ package com.muvrinovci.lazes.client.view;
 import java.util.List;
 import java.util.Map;
 
-/** Boje mesta za stolom; iste vrednosti koristi i server. */
+/** Boje mesta za stolom, iste vrednosti koristi i server. */
 public final class Avatars {
 
     public static final List<String> ALL = List.of("blue", "red", "green", "gold");

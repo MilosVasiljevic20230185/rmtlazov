@@ -24,13 +24,13 @@ public final class GameRules {
 
     public static final int ROOM_CODE_LENGTH = 6;
 
-    /** Koliko dugo se cuva mesto igraca kome je pukla veza. */
+    /* Koliko dugo se cuva mesto igraca kome je pukla veza */
     public static final int DISCONNECT_GRACE_SECONDS = 120;
 
-    /** Tajmer poteza za odspojeno mesto; server umesto njega igra automatski. */
+    /* Tajmer poteza za odspojeno mesto; server umesto njega igra automatski */
     public static final int DISCONNECTED_TURN_SECONDS = 3;
 
-    /** Koliko soba ceka bez ijednog povezanog igraca pre nego sto se ugasi. */
+    /* Koliko soba ceka bez ijednog povezanog igraca pre nego sto se ugasi */
     public static final int EMPTY_ROOM_SECONDS = 60;
 
     private GameRules() {

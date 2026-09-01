@@ -8,7 +8,7 @@ import com.muvrinovci.lazes.shared.protocol.MessageType;
 /** Server -> Klijent: kraj partije i konacan poredak. */
 public class GameOverMessage extends Message {
 
-    /** Jedno mesto u konacnom poretku. */
+    /* Jedno mesto u konacnom poretku. */
     public static class RankingEntry {
 
         private int rank;

@@ -15,7 +15,7 @@ import javafx.stage.Stage;
 /**
  * Prebacivanje izmedju ekrana i povezivanje trenutnog ekrana sa mreznim slojem.
  *
- * U svakom trenutku samo jedan kontroler slusa poruke sa servera; prilikom
+ * U svakom trenutku samo jedan kontroler slusa poruke sa servera, prilikom
  * promene ekrana slusalac se prebacuje na novi kontroler.
  */
 public class ViewNavigator {

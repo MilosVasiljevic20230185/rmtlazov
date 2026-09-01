@@ -16,23 +16,6 @@ import com.muvrinovci.lazes.shared.model.Card;
 import com.muvrinovci.lazes.shared.model.Rank;
 import com.muvrinovci.lazes.shared.protocol.ErrorCode;
 
-/**
- * Pravila igre "Lazes" , jedini autoritet nad stanjem partije.
- *
- * Klasa je namerno bez ikakve mrezne logike: prima akcije igraca, proverava
- * ih i vraca ishod. Nije thread-safe, ali joj to nije ni potrebno - svaka
- * code Room je poziva iz svoje jedne niti, pa se stanje menja sekvencijalno.
- *
- * Tok jedne runde:
- * 
- *   Igrac na potezu baca karte (playCards) ili vuce kartu (drawCard).
- *   Nakon bacanja partija ulazi u CALL_WINDOW.
- *   Ako neko prozove (callLiar), karte se otkrivaju, gubitnik kupi centar
- *       i runda se zavrsava (vrednost runde se resetuje).
- *   Ako niko ne prozove (closeCallWindow) red ide dalje, a vrednost
- *       runde ostaje ista.
- * 
- */
 public class GameEngine {
 
     /** Odigran potez koji jos uvek ceka na eventualno prozivanje. */

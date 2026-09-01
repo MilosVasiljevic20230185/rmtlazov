@@ -38,7 +38,7 @@ public final class Main {
 
     /**
      * Port se bira ovim redosledom: argument komandne linije, pa promenljiva
-     * okruzenja  PORT, pa podrazumevani  GameRules#DEFAULT_POR}.
+     * okruzenja  PORT, pa podrazumevani  DEFAULT_POR.
      * Promenljiva okruzenja je tu zbog hostovanja, gde port cesto zadaje platforma.
      */
     private static int parsePort(String[] args) {

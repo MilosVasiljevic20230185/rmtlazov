@@ -46,7 +46,7 @@ public class LobbyStateMessage extends Message {
     private List<LobbyPlayer> players;
     private String hostId;
 
-    /** true kada u sobi ima najmanje dva igraca i svi su spremni. */
+    /* true kada u sobi ima najmanje dva igraca i svi su spremni. */
     private boolean canStart;
 
     public LobbyStateMessage() {

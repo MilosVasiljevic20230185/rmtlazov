@@ -87,7 +87,7 @@ public class NetworkClient {
                 }
             }
         } catch (IOException e) {
-            // Ocekivano kada se veza zatvara sa nase strane.
+            // kada se veza zatvara sa nase strane.
         } finally {
             if (!closing) {
                 Platform.runLater(() -> {
